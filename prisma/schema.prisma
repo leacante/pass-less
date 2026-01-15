@@ -16,6 +16,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   passwords     Password[]
+  tags          Tag[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
@@ -63,9 +64,24 @@ model Password {
   iv                String
   authTag           String
   description       String
+  observation       String?
+  tagId             String?
+  tag               Tag?     @relation(fields: [tagId], references: [id], onDelete: SetNull)
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  @@index([userId])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  color     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwords Password[]
+
+  @@unique([userId, name])
   @@index([userId])
 }

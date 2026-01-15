@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { PasswordRow, PasswordEntry } from './PasswordRow';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 
+import { TagManager } from './TagManager';
+
 export function PasswordTable() {
     const [passwords, setPasswords] = useState<PasswordEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -11,6 +13,9 @@ export function PasswordTable() {
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [tags, setTags] = useState<import('./TagManager').Tag[]>([]);
+    const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+    const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
     const fetchPasswords = async () => {
         try {
@@ -29,9 +34,22 @@ export function PasswordTable() {
 
     useEffect(() => {
         fetchPasswords();
+        fetchTags();
     }, []);
 
-    const handleSave = async (data: { username: string; password: string; description: string }) => {
+    const fetchTags = async () => {
+        try {
+            const res = await fetch('/api/tags');
+            if (res.ok) {
+                const data = await res.json();
+                setTags(data);
+            }
+        } catch (error) {
+            console.error('Error fetching tags:', error);
+        }
+    };
+
+    const handleSave = async (data: { username: string; password: string; description: string; observation?: string; tagId?: string }) => {
         const res = await fetch('/api/passwords', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -45,7 +63,7 @@ export function PasswordTable() {
 
     const handleUpdate = async (
         id: string,
-        data: { username?: string; password?: string; description?: string }
+        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string }
     ) => {
         const res = await fetch(`/api/passwords/${id}`, {
             method: 'PUT',
@@ -75,10 +93,14 @@ export function PasswordTable() {
     // Filtrar contraseñas según el término de búsqueda
     const filteredPasswords = passwords.filter((password) => {
         const search = searchTerm.toLowerCase();
-        return (
+        const matchesSearch =
             password.username.toLowerCase().includes(search) ||
-            password.description.toLowerCase().includes(search)
-        );
+            password.description.toLowerCase().includes(search) ||
+            (password.tag && password.tag.name.toLowerCase().includes(search));
+
+        const matchesTags = selectedTagIds.length === 0 || (password.tagId && selectedTagIds.includes(password.tagId));
+
+        return matchesSearch && matchesTags;
     });
 
     if (loading) {
@@ -118,7 +140,7 @@ export function PasswordTable() {
                 </button>
             </div>
 
-            <div className="search-filter">
+            <div className="search-filter" style={{ flexWrap: 'wrap' }}>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.35-4.35" />
@@ -129,18 +151,57 @@ export function PasswordTable() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
+                    style={{ minWidth: '200px' }}
                 />
-                {searchTerm && (
-                    <button
-                        onClick={() => setSearchTerm('')}
-                        className="clear-search"
-                        title="Limpiar búsqueda"
-                    >
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+
+                <div className="tag-filter" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto' }}>
+                    <div className="tag-select-container">
+                        <select
+                            className="input-field"
+                            style={{ height: '36px', padding: '0 0.5rem' }}
+                            onChange={(e) => {
+                                if (e.target.value && !selectedTagIds.includes(e.target.value)) {
+                                    setSelectedTagIds([...selectedTagIds, e.target.value]);
+                                    e.target.value = ''; // Reset select
+                                }
+                            }}
+                        >
+                            <option value="">Filtrar por Tags...</option>
+                            {tags.filter(t => !selectedTagIds.includes(t.id)).map(tag => (
+                                <option key={tag.id} value={tag.id}>{tag.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button onClick={() => setIsTagManagerOpen(true)} className="btn-cancel-small" style={{ marginLeft: '1rem' }}>
+                        Administrar Tags
                     </button>
+                </div>
+
+                {selectedTagIds.length > 0 && (
+                    <div style={{ flexBasis: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                        {selectedTagIds.map(id => {
+                            const tag = tags.find(t => t.id === id);
+                            return tag ? (
+                                <span key={id} className="tag-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    {tag.name}
+                                    <button
+                                        onClick={() => setSelectedTagIds(selectedTagIds.filter(tid => tid !== id))}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(0,0,0,0.2)', width: '16px', height: '16px', border: 'none', cursor: 'pointer', color: 'currentColor' }}
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ) : null;
+                        })}
+                        <button
+                            onClick={() => setSelectedTagIds([])}
+                            className="clear-search"
+                            style={{ fontSize: '0.8rem' }}
+                        >
+                            Limpiar filtros
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -159,6 +220,7 @@ export function PasswordTable() {
                             <PasswordRow
                                 entry={null}
                                 isNew
+                                availableTags={tags}
                                 onSave={handleSave}
                                 onUpdate={handleUpdate}
                                 onDelete={handleDeleteRequest}
@@ -169,6 +231,7 @@ export function PasswordTable() {
                             <PasswordRow
                                 key={password.id}
                                 entry={password}
+                                availableTags={tags}
                                 onSave={handleSave}
                                 onUpdate={handleUpdate}
                                 onDelete={handleDeleteRequest}
@@ -206,6 +269,13 @@ export function PasswordTable() {
                 onConfirm={handleDeleteConfirm}
                 onCancel={() => setDeleteTarget(null)}
             />
+
+            {isTagManagerOpen && (
+                <TagManager
+                    onClose={() => setIsTagManagerOpen(false)}
+                    onTagsChange={fetchTags}
+                />
+            )}
         </div>
     );
 }

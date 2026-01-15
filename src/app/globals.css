@@ -510,6 +510,20 @@ input {
   color: var(--text-secondary);
 }
 
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--accent-secondary);
+  font-size: 0.7rem;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
 .actions-cell {
   text-align: right;
   padding-right: 1.5rem !important;
@@ -809,6 +823,10 @@ input {
 
 .btn-delete:hover {
   filter: brightness(1.1);
+}
+
+.observation-content {
+  padding: 2rem;
 }
 
 /* ===== Responsive ===== */

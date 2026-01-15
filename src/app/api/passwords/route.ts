@@ -18,6 +18,9 @@ export async function GET() {
             id: true,
             username: true,
             description: true,
+            observation: true,
+            tag: true, // This will now fetch the relation
+            tagId: true,
             createdAt: true,
             updatedAt: true,
         },
@@ -36,7 +39,14 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { username, password, description } = body;
+        const { username, password, description, observation, tagId } = body;
+
+        if (observation && observation.length > 1000) {
+            return NextResponse.json(
+                { error: 'Observation must be less than 1000 characters' },
+                { status: 400 }
+            );
+        }
 
         if (!username || !password || !description) {
             return NextResponse.json(
@@ -55,11 +65,16 @@ export async function POST(request: Request) {
                 iv,
                 authTag,
                 description,
+                observation,
+                tagId,
             },
             select: {
                 id: true,
                 username: true,
                 description: true,
+                observation: true,
+                tag: true, // Include the relation in response
+                tagId: true,
                 createdAt: true,
                 updatedAt: true,
             },

@@ -29,11 +29,20 @@ export async function PUT(request: Request, { params }: RouteParams) {
         }
 
         const body = await request.json();
-        const { username, password, description } = body;
+        const { username, password, description, observation, tagId } = body;
+
+        if (observation && observation.length > 1000) {
+            return NextResponse.json(
+                { error: 'Observation must be less than 1000 characters' },
+                { status: 400 }
+            );
+        }
 
         const updateData: {
             username?: string;
             description?: string;
+            observation?: string;
+            tagId?: string | null;
             encryptedPassword?: string;
             iv?: string;
             authTag?: string;
@@ -41,6 +50,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
         if (username) updateData.username = username;
         if (description) updateData.description = description;
+        if (observation !== undefined) updateData.observation = observation;
+        if (tagId !== undefined) updateData.tagId = tagId;
 
         // Only re-encrypt if password is provided
         if (password) {
@@ -57,6 +68,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
                 id: true,
                 username: true,
                 description: true,
+                observation: true,
+                tag: true, // Include relation
+                tagId: true,
                 createdAt: true,
                 updatedAt: true,
             },
