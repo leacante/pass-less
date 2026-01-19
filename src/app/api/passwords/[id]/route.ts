@@ -55,7 +55,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
         // Only re-encrypt if password is provided
         if (password) {
-            const { encrypted, iv, authTag } = encrypt(password);
+            const { encrypted, iv, authTag } = encrypt(password, session.user.id);
             updateData.encryptedPassword = encrypted;
             updateData.iv = iv;
             updateData.authTag = authTag;

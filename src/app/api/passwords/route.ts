@@ -55,7 +55,8 @@ export async function POST(request: Request) {
             );
         }
 
-        const { encrypted, iv, authTag } = encrypt(password);
+        // Cifrar usando la clave derivada del usuario
+        const { encrypted, iv, authTag } = encrypt(password, session.user.id);
 
         const newPassword = await prisma.password.create({
             data: {

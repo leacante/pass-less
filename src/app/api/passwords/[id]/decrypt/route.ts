@@ -33,10 +33,12 @@ export async function POST(request: Request, { params }: RouteParams) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
+        // Descifrar usando la clave derivada del usuario
         const decryptedPassword = decrypt(
             passwordEntry.encryptedPassword,
             passwordEntry.iv,
-            passwordEntry.authTag
+            passwordEntry.authTag,
+            session.user.id
         );
 
         return NextResponse.json({ password: decryptedPassword });
