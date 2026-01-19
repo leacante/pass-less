@@ -1,8 +1,8 @@
 # Build stage
-FROM node:24-alpine AS builder
+FROM node:24-slim AS builder
 
-# Install OpenSSL 1.1 compatibility library for Prisma
-RUN apk add --no-cache openssl1.1-compat
+# Install OpenSSL and other dependencies for Prisma
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -24,10 +24,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Production stage
-FROM node:24-alpine AS runner
+FROM node:24-slim AS runner
 
-# Install OpenSSL 1.1 compatibility library for Prisma
-RUN apk add --no-cache openssl1.1-compat
+# Install OpenSSL and other dependencies for Prisma
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
