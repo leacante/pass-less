@@ -47,12 +47,7 @@ export async function POST(request: Request) {
         const normalizedTagId =
             typeof tagId === 'string' && tagId.trim() !== '' ? tagId : null;
 
-        if (observation && observation.length > 1000) {
-            return NextResponse.json(
-                { error: 'Observation must be less than 1000 characters' },
-                { status: 400 }
-            );
-        }
+        
 
         if (!username || !password || !description) {
             return NextResponse.json(

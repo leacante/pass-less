@@ -31,12 +31,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const body = await request.json();
         const { username, password, description, observation, tagId, workspaceId } = body;
 
-        if (observation && observation.length > 1000) {
-            return NextResponse.json(
-                { error: 'Observation must be less than 1000 characters' },
-                { status: 400 }
-            );
-        }
+       
 
         const updateData: {
             username?: string;

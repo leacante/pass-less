@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import MDEditor from '@uiw/react-md-editor';
 import { CopyButton } from './CopyButton';
 
 export interface PasswordEntry {
@@ -190,13 +190,12 @@ export function PasswordRow({
                             </select>
                         </div>
                         <div className="form-row">
-                            <textarea
+                            <MDEditor
                                 value={formData.observation}
-                                onChange={(e) => setFormData({ ...formData, observation: e.target.value })}
-                                placeholder="Observaciones (Markdown compatible)"
+                                onChange={(e) => setFormData({ ...formData, observation: e || '' })}
                                 className="input-field textarea-field"
-                                maxLength={1000}
-                                rows={3}
+                                minHeight={200}
+                                
                             />
                         </div>
                         <div className="form-actions">
@@ -272,7 +271,7 @@ export function PasswordRow({
                             <h4>Observaciones</h4>
                             {entry.observation ? (
                                 <div className="markdown-body">
-                                    <ReactMarkdown>{entry.observation}</ReactMarkdown>
+                                    <MDEditor.Markdown source={entry.observation} />
                                 </div>
                             ) : (
                                 <p className="no-observation">Sin observaciones.</p>

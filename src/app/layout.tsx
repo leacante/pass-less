@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { SessionProvider } from 'next-auth/react';
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@uiw/react-markdown-preview/markdown.css';
 import './globals.css';
 
 export const metadata: Metadata = {
