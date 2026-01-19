@@ -42,6 +42,7 @@ export function PasswordRow({
     const [isEditing, setIsEditing] = useState(isNew);
     const [isExpanded, setIsExpanded] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         username: entry?.username || '',
         password: '',
@@ -112,13 +113,36 @@ export function PasswordRow({
                                 className="input-field"
                                 autoFocus
                             />
-                            <input
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                placeholder={isNew ? 'Contraseña' : 'Nueva contraseña (opcional)'}
-                                className="input-field"
-                            />
+                            <div className="password-input-group">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder={isNew ? 'Contraseña' : 'Nueva contraseña (opcional)'}
+                                    className="input-field input-with-icon"
+                                />
+                                <button
+                                    type="button"
+                                    className="btn-toggle-visibility"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                    title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                >
+                                    {showPassword ? (
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M3 3l18 18" />
+                                            <path d="M10.58 10.58A2 2 0 0012 14a2 2 0 001.42-.58" />
+                                            <path d="M9.88 5.09A10.94 10.94 0 0112 5c5 0 9.27 3.11 11 7-0.6 1.34-1.5 2.53-2.62 3.5" />
+                                            <path d="M6.11 6.11C4.08 7.23 2.53 8.98 1 12c1.73 3.89 6 7 11 7 1.1 0 2.15-.15 3.12-.44" />
+                                        </svg>
+                                    ) : (
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
                             <input
                                 type="text"
                                 value={formData.description}
