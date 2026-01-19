@@ -1,6 +1,9 @@
 # Build stage
 FROM node:24-alpine AS builder
 
+# Install OpenSSL 1.1 compatibility library for Prisma
+RUN apk add --no-cache openssl1.1-compat
+
 WORKDIR /app
 
 # Copy package files
@@ -22,6 +25,9 @@ RUN npm run build
 
 # Production stage
 FROM node:24-alpine AS runner
+
+# Install OpenSSL 1.1 compatibility library for Prisma
+RUN apk add --no-cache openssl1.1-compat
 
 WORKDIR /app
 
