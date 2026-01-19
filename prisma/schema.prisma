@@ -17,6 +17,7 @@ model User {
   sessions      Session[]
   passwords     Password[]
   tags          Tag[]
+  workspaces    Workspace[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
@@ -68,10 +69,25 @@ model Password {
   observation       String?
   tagId             String?  @db.ObjectId
   tag               Tag?     @relation(fields: [tagId], references: [id], onDelete: SetNull)
+  workspaceId       String?  @db.ObjectId
+  workspace         Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  @@index([userId])
+}
+
+model Workspace {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  userId    String     @db.ObjectId
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwords Password[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, name])
   @@index([userId])
 }
 

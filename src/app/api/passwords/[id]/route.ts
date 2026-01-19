@@ -29,7 +29,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         }
 
         const body = await request.json();
-        const { username, password, description, observation, tagId } = body;
+        const { username, password, description, observation, tagId, workspaceId } = body;
 
         if (observation && observation.length > 1000) {
             return NextResponse.json(
@@ -43,6 +43,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
             description?: string;
             observation?: string;
             tagId?: string | null;
+            workspaceId?: string | null;
             encryptedPassword?: string;
             iv?: string;
             authTag?: string;
@@ -51,7 +52,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
         if (username) updateData.username = username;
         if (description) updateData.description = description;
         if (observation !== undefined) updateData.observation = observation;
-        if (tagId !== undefined) updateData.tagId = tagId;
+        if (tagId !== undefined) {
+            updateData.tagId =
+                typeof tagId === 'string' && tagId.trim() !== '' ? tagId : null;
+        }
+        if (workspaceId !== undefined) {
+            updateData.workspaceId =
+                typeof workspaceId === 'string' && workspaceId.trim() !== '' ? workspaceId : null;
+        }
 
         // Only re-encrypt if password is provided
         if (password) {
@@ -71,6 +79,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
                 observation: true,
                 tag: true, // Include relation
                 tagId: true,
+                workspace: true,
+                workspaceId: true,
                 createdAt: true,
                 updatedAt: true,
             },

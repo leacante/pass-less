@@ -11,6 +11,8 @@ export interface PasswordEntry {
     observation?: string | null;
     tag?: { id: string; name: string; color?: string | null } | null;
     tagId?: string | null;
+    workspace?: { id: string; name: string } | null;
+    workspaceId?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -21,10 +23,12 @@ interface PasswordRowProps {
     entry: PasswordEntry | null;
     isNew?: boolean;
     availableTags: Tag[];
-    onSave: (data: { username: string; password: string; description: string; observation?: string; tagId?: string }) => Promise<void>;
+    availableWorkspaces: { id: string; name: string }[];
+    defaultWorkspaceId?: string;
+    onSave: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => Promise<void>;
     onUpdate: (
         id: string,
-        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string }
+        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null }
     ) => Promise<void>;
     onDelete: (id: string, description: string) => void;
     onCancelNew?: () => void;
@@ -34,6 +38,8 @@ export function PasswordRow({
     entry,
     isNew = false,
     availableTags,
+    availableWorkspaces,
+    defaultWorkspaceId,
     onSave,
     onUpdate,
     onDelete,
@@ -49,6 +55,7 @@ export function PasswordRow({
         description: entry?.description || '',
         observation: entry?.observation || '',
         tagId: entry?.tagId || '',
+        workspaceId: entry?.workspaceId || defaultWorkspaceId || '',
     });
 
     const handleSave = async () => {
@@ -67,6 +74,10 @@ export function PasswordRow({
                     description: formData.description !== entry.description ? formData.description : undefined,
                     observation: formData.observation !== (entry.observation || '') ? formData.observation : undefined,
                     tagId: formData.tagId !== (entry.tagId || '') ? formData.tagId : undefined,
+                    workspaceId:
+                        formData.workspaceId !== (entry.workspaceId || '')
+                            ? formData.workspaceId || null
+                            : undefined,
                 });
                 setIsEditing(false);
                 setFormData({ ...formData, password: '' });
@@ -87,6 +98,7 @@ export function PasswordRow({
                 description: entry?.description || '',
                 observation: entry?.observation || '',
                 tagId: entry?.tagId || '',
+                workspaceId: entry?.workspaceId || defaultWorkspaceId || '',
             });
         }
     };
@@ -160,6 +172,19 @@ export function PasswordRow({
                                 {availableTags.map((tag) => (
                                     <option key={tag.id} value={tag.id}>
                                         {tag.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <select
+                                value={formData.workspaceId}
+                                onChange={(e) => setFormData({ ...formData, workspaceId: e.target.value })}
+                                className="input-field"
+                                style={{ maxWidth: '170px' }}
+                            >
+                                <option value="">Sin espacio</option>
+                                {availableWorkspaces.map((workspace) => (
+                                    <option key={workspace.id} value={workspace.id}>
+                                        {workspace.name}
                                     </option>
                                 ))}
                             </select>

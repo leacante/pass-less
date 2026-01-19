@@ -21,6 +21,8 @@ export async function GET() {
             observation: true,
             tag: true, // This will now fetch the relation
             tagId: true,
+            workspace: true,
+            workspaceId: true,
             createdAt: true,
             updatedAt: true,
         },
@@ -39,7 +41,11 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { username, password, description, observation, tagId } = body;
+        const { username, password, description, observation, tagId, workspaceId } = body;
+        const normalizedWorkspaceId =
+            typeof workspaceId === 'string' && workspaceId.trim() !== '' ? workspaceId : null;
+        const normalizedTagId =
+            typeof tagId === 'string' && tagId.trim() !== '' ? tagId : null;
 
         if (observation && observation.length > 1000) {
             return NextResponse.json(
@@ -67,7 +73,8 @@ export async function POST(request: Request) {
                 authTag,
                 description,
                 observation,
-                tagId,
+                tagId: normalizedTagId ?? undefined,
+                workspaceId: normalizedWorkspaceId ?? undefined,
             },
             select: {
                 id: true,
@@ -76,6 +83,8 @@ export async function POST(request: Request) {
                 observation: true,
                 tag: true, // Include the relation in response
                 tagId: true,
+                workspace: true,
+                workspaceId: true,
                 createdAt: true,
                 updatedAt: true,
             },

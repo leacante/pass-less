@@ -360,11 +360,99 @@ input {
 }
 
 /* ===== Password Table ===== */
+.workspace-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.workspace-sidebar {
+  width: 240px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  position: sticky;
+  top: 5.5rem;
+}
+
+.workspace-sidebar-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.workspace-create {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.btn-add-small {
+  padding: 0 0.75rem;
+  background: var(--accent-gradient);
+  color: white;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.btn-add-small:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-add-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workspace-error {
+  margin-top: 0.5rem;
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+
+.workspace-list {
+  list-style: none;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.workspace-item {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.workspace-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.workspace-item.active {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color-hover);
+}
+
+.workspace-selected {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
 .password-table-container {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   overflow: hidden;
+  flex: 1;
 }
 
 .table-header {
@@ -489,6 +577,16 @@ input {
 
 .password-row.editing td {
   background: var(--bg-tertiary);
+}
+
+.workspace-separator td {
+  padding: 0.5rem 1rem;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .cell-content {
@@ -881,6 +979,15 @@ input {
 
   .dashboard-main {
     padding: 1rem;
+  }
+
+  .workspace-layout {
+    flex-direction: column;
+  }
+
+  .workspace-sidebar {
+    width: 100%;
+    position: static;
   }
 
   .table-header {
