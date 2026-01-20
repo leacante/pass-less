@@ -8,10 +8,13 @@ Inspirado en **blocks.css** y **codeframe.co**, este sistema de diseño abraza u
 - **Tangible**: Todo se siente como bloques físicos
 - **Personalidad**: Evita diseños corporativos genéricos
 - **Feedback inmediato**: Interacciones mecánicas y claras
+- **Modo oscuro**: Soporta tema claro y oscuro con la misma personalidad
 
 ## 🎨 Paleta de Colores
 
-### Fondos
+### Modo Claro (Light Mode)
+
+#### Fondos
 ```css
 --bg-paper: #fafafa      /* Fondo general */
 --bg-white: #ffffff      /* Bloques principales */
@@ -22,14 +25,34 @@ Inspirado en **blocks.css** y **codeframe.co**, este sistema de diseño abraza u
 --bg-gray: #f5f5f5       /* Hover sutiles */
 ```
 
-### Texto
+#### Texto
 ```css
 --text-primary: #1a1a1a    /* Texto principal */
 --text-secondary: #525252  /* Texto secundario */
 --text-muted: #737373      /* Texto deshabilitado */
 ```
 
-### Acentos
+### Modo Oscuro (Dark Mode)
+
+#### Fondos
+```css
+--bg-paper: #0f0f0f      /* Fondo general */
+--bg-white: #1a1a1a      /* Bloques principales */
+--bg-mint: #1a3d2a       /* Acciones positivas */
+--bg-green: #2d4a3a      /* Separadores */
+--bg-yellow: #3d3520     /* Advertencias/destructivas */
+--bg-blue: #1a2a3d       /* Estados editando */
+--bg-gray: #252525       /* Hover sutiles */
+```
+
+#### Texto
+```css
+--text-primary: #f5f5f5    /* Texto principal */
+--text-secondary: #b0b0b0  /* Texto secundario */
+--text-muted: #707070      /* Texto deshabilitado */
+```
+
+### Acentos (Iguales en ambos modos)
 ```css
 --accent-green: #4ade80    /* Principal/éxito */
 --accent-mint: #6ee7b7     /* Focus states */
@@ -37,6 +60,33 @@ Inspirado en **blocks.css** y **codeframe.co**, este sistema de diseño abraza u
 --accent-red: #ef4444      /* Peligro */
 --accent-yellow: #fbbf24   /* Advertencia */
 ```
+
+**Nota**: Los colores de acento se mantienen vibrantes en ambos modos para mantener la personalidad del diseño.
+
+## 🌓 Sistema de Temas
+
+El tema se gestiona mediante un atributo `data-theme` en el elemento HTML:
+
+```html
+<!-- Light mode -->
+<html data-theme="light">
+
+<!-- Dark mode -->
+<html data-theme="dark">
+```
+
+La preferencia del usuario se guarda en `localStorage` y se respeta la preferencia del sistema operativo si no hay preferencia guardada.
+
+### Toggle de Tema
+
+```tsx
+<ThemeToggle />
+```
+
+El botón de toggle mantiene el estilo blocks.css:
+- Bordes gruesos
+- Sombras duras
+- Interacción táctil (se levanta/hunde al interactuar)
 
 ## 🧱 Componentes Base
 

@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AuthButton } from '@/components/AuthButton';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -25,13 +26,16 @@ export default function Home() {
 
   return (
     <main className="landing">
+      <div className="theme-toggle-landing">
+        <ThemeToggle />
+      </div>
       <div className="hero">
         <div className="logo-container">
           <svg viewBox="0 0 100 100" width="100" height="100" className="logo-icon">
-            <rect x="15" y="45" width="70" height="45" rx="6" ry="6" fill="#4ade80" stroke="#1a1a1a" strokeWidth="3" />
-            <path d="M30 45V30a20 20 0 0140 0v15" fill="none" stroke="#1a1a1a" strokeWidth="3" />
-            <circle cx="50" cy="65" r="6" fill="#1a1a1a" />
-            <rect x="47" y="70" width="6" height="12" fill="#1a1a1a" />
+            <rect x="15" y="45" width="70" height="45" rx="6" ry="6" fill="#4ade80" stroke="currentColor" strokeWidth="3" />
+            <path d="M30 45V30a20 20 0 0140 0v15" fill="none" stroke="currentColor" strokeWidth="3" />
+            <circle cx="50" cy="65" r="6" fill="currentColor" />
+            <rect x="47" y="70" width="6" height="12" fill="currentColor" />
           </svg>
         </div>
         <h1 className="title">
