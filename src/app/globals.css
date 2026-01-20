@@ -421,6 +421,13 @@ input {
   gap: 0.25rem;
 }
 
+.workspace-item-container {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+}
+
 .workspace-item {
   width: 100%;
   padding: 0.5rem 0.75rem;
@@ -428,6 +435,7 @@ input {
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   transition: all var(--transition-fast);
+  flex: 1;
 }
 
 .workspace-item:hover {
@@ -439,6 +447,27 @@ input {
   color: var(--text-primary);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color-hover);
+}
+
+.workspace-delete-btn {
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  background: transparent;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.workspace-item-container:hover .workspace-delete-btn {
+  opacity: 1;
+}
+
+.workspace-delete-btn:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .workspace-selected {

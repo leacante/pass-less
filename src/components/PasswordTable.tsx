@@ -21,6 +21,7 @@ export function PasswordTable() {
     const [newWorkspaceName, setNewWorkspaceName] = useState('');
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
     const [workspaceLoading, setWorkspaceLoading] = useState(false);
+    const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<{ id: string; name: string } | null>(null);
 
     const fetchPasswords = async () => {
         try {
@@ -92,6 +93,36 @@ export function PasswordTable() {
             setWorkspaceError(err instanceof Error ? err.message : 'Error al crear el espacio');
         } finally {
             setWorkspaceLoading(false);
+        }
+    };
+
+    const handleDeleteWorkspaceRequest = (id: string, name: string) => {
+        setDeleteWorkspaceTarget({ id, name });
+    };
+
+    const handleDeleteWorkspaceConfirm = async () => {
+        if (!deleteWorkspaceTarget) return;
+
+        try {
+            const res = await fetch(`/api/workspaces/${deleteWorkspaceTarget.id}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) throw new Error('Failed to delete workspace');
+            
+            setWorkspaces(workspaces.filter((w) => w.id !== deleteWorkspaceTarget.id));
+            
+            // Si el workspace eliminado estaba seleccionado, cambiar a 'all'
+            if (selectedWorkspaceId === deleteWorkspaceTarget.id) {
+                setSelectedWorkspaceId('all');
+            }
+            
+            // Actualizar las contraseñas para reflejar el cambio
+            await fetchPasswords();
+            
+            setDeleteWorkspaceTarget(null);
+        } catch (err) {
+            console.error('Error deleting workspace:', err);
+            setDeleteWorkspaceTarget(null);
         }
     };
 
@@ -264,12 +295,27 @@ export function PasswordTable() {
                     </li>
                     {workspaces.map((workspace) => (
                         <li key={workspace.id}>
-                            <button
-                                className={`workspace-item ${selectedWorkspaceId === workspace.id ? 'active' : ''}`}
-                                onClick={() => setSelectedWorkspaceId(workspace.id)}
-                            >
-                                {workspace.name}
-                            </button>
+                            <div className="workspace-item-container">
+                                <button
+                                    className={`workspace-item ${selectedWorkspaceId === workspace.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedWorkspaceId(workspace.id)}
+                                >
+                                    {workspace.name}
+                                </button>
+                                <button
+                                    className="workspace-delete-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteWorkspaceRequest(workspace.id, workspace.name);
+                                    }}
+                                    title="Eliminar espacio"
+                                >
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                </button>
+                            </div>
                         </li>
                     ))}
                 </ul>
@@ -451,6 +497,13 @@ export function PasswordTable() {
                 description={deleteTarget?.description || ''}
                 onConfirm={handleDeleteConfirm}
                 onCancel={() => setDeleteTarget(null)}
+            />
+
+            <DeleteConfirmModal
+                isOpen={!!deleteWorkspaceTarget}
+                description={deleteWorkspaceTarget ? `el espacio de trabajo "${deleteWorkspaceTarget.name}"` : ''}
+                onConfirm={handleDeleteWorkspaceConfirm}
+                onCancel={() => setDeleteWorkspaceTarget(null)}
             />
 
             {isTagManagerOpen && (
