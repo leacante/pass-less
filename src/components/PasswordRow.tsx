@@ -3,27 +3,14 @@
 import { useState } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { CopyButton } from './CopyButton';
-
-export interface PasswordEntry {
-    id: string;
-    username: string;
-    description: string;
-    observation?: string | null;
-    tag?: { id: string; name: string; color?: string | null } | null;
-    tagId?: string | null;
-    workspace?: { id: string; name: string } | null;
-    workspaceId?: string | null;
-    createdAt: string;
-    updatedAt: string;
-}
-
-import { Tag } from './TagManager';
+import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
+import { Tag, Workspace } from '@/core/domain/models/password';
 
 interface PasswordRowProps {
-    entry: PasswordEntry | null;
+    entry: PasswordDTO | null;
     isNew?: boolean;
     availableTags: Tag[];
-    availableWorkspaces: { id: string; name: string }[];
+    availableWorkspaces: Workspace[];
     defaultWorkspaceId?: string;
     onSave: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => Promise<void>;
     onUpdate: (
@@ -32,6 +19,7 @@ interface PasswordRowProps {
     ) => Promise<void>;
     onDelete: (id: string, description: string) => void;
     onCancelNew?: () => void;
+    onDecrypt?: (id: string) => Promise<string>;
 }
 
 export function PasswordRow({
@@ -44,6 +32,7 @@ export function PasswordRow({
     onUpdate,
     onDelete,
     onCancelNew,
+    onDecrypt,
 }: PasswordRowProps) {
     const [isEditing, setIsEditing] = useState(isNew);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -105,10 +94,8 @@ export function PasswordRow({
 
     const decryptPassword = async (): Promise<string> => {
         if (!entry) return '';
-        const res = await fetch(`/api/passwords/${entry.id}/decrypt`, { method: 'POST' });
-        if (!res.ok) throw new Error('Failed to decrypt');
-        const data = await res.json();
-        return data.password;
+        if (!onDecrypt) return '';
+        return onDecrypt(entry.id);
     };
 
     if (isEditing) {

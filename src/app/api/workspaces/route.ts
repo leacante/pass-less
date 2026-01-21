@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
+import { PrismaWorkspaceRepository } from '@/core/infrastructure/repositories/PrismaWorkspaceRepository';
+import { ListWorkspacesUseCase } from '@/core/application/use-cases/workspaces/ListWorkspacesUseCase';
+import { CreateWorkspaceUseCase } from '@/core/application/use-cases/workspaces/CreateWorkspaceUseCase';
 
 export const dynamic = 'force-dynamic';
+
+const repository = new PrismaWorkspaceRepository();
 
 export async function GET() {
     const session = await auth();
@@ -11,11 +15,7 @@ export async function GET() {
     }
 
     try {
-        const workspaces = await prisma.workspace.findMany({
-            where: { userId: session.user.id },
-            orderBy: { name: 'asc' },
-        });
-
+        const workspaces = await new ListWorkspacesUseCase(repository).execute(session.user.id);
         return NextResponse.json(workspaces);
     } catch (error) {
         console.error('Error fetching workspaces:', error);
@@ -37,13 +37,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Name is required' }, { status: 400 });
         }
 
-        const workspace = await prisma.workspace.create({
-            data: {
-                name,
-                userId: session.user.id,
-            },
-        });
-
+        const workspace = await new CreateWorkspaceUseCase(repository).execute({ userId: session.user.id, name });
         return NextResponse.json(workspace, { status: 201 });
     } catch (error) {
         console.error('Error creating workspace:', error);
