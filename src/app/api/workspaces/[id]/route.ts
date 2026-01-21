@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
+import { PrismaWorkspaceRepository } from '@/core/infrastructure/repositories/PrismaWorkspaceRepository';
+import { DeleteWorkspaceUseCase } from '@/core/application/use-cases/workspaces/DeleteWorkspaceUseCase';
 
 export const dynamic = 'force-dynamic';
 
+const repository = new PrismaWorkspaceRepository();
+
 export async function DELETE(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ id: string }> },
 ) {
     const session = await auth();
     if (!session?.user?.id) {
@@ -15,25 +18,7 @@ export async function DELETE(
 
     try {
         const { id } = await params;
-
-        // Verificar que el workspace pertenece al usuario
-        const workspace = await prisma.workspace.findUnique({
-            where: { id },
-        });
-
-        if (!workspace) {
-            return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
-        }
-
-        if (workspace.userId !== session.user.id) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
-
-        // Eliminar el workspace (las contraseñas asociadas tendrán workspaceId en null gracias a onDelete: SetNull)
-        await prisma.workspace.delete({
-            where: { id },
-        });
-
+        await new DeleteWorkspaceUseCase(repository).execute(id, session.user.id);
         return NextResponse.json({ message: 'Workspace deleted successfully' });
     } catch (error) {
         console.error('Error deleting workspace:', error);

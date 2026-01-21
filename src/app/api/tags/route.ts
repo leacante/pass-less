@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
+import { PrismaTagRepository } from '@/core/infrastructure/repositories/PrismaTagRepository';
+import { ListTagsUseCase } from '@/core/application/use-cases/tags/ListTagsUseCase';
+import { CreateTagUseCase } from '@/core/application/use-cases/tags/CreateTagUseCase';
+
+const repository = new PrismaTagRepository();
 
 export async function GET() {
     const session = await auth();
@@ -9,15 +13,7 @@ export async function GET() {
     }
 
     try {
-        const tags = await prisma.tag.findMany({
-            where: {
-                userId: session.user.id,
-            },
-            orderBy: {
-                name: 'asc',
-            },
-        });
-
+        const tags = await new ListTagsUseCase(repository).execute(session.user.id);
         return NextResponse.json(tags);
     } catch (error) {
         console.error('Error fetching tags:', error);
@@ -39,12 +35,10 @@ export async function POST(request: Request) {
             return new NextResponse('Name is required', { status: 400 });
         }
 
-        const tag = await prisma.tag.create({
-            data: {
-                name,
-                color,
-                userId: session.user.id,
-            },
+        const tag = await new CreateTagUseCase(repository).execute({
+            userId: session.user.id,
+            name,
+            color,
         });
 
         return NextResponse.json(tag, { status: 201 });

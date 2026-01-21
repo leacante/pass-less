@@ -1,198 +1,75 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
-import { PasswordRow, PasswordEntry } from './PasswordRow';
+import { Fragment, useMemo, useState } from 'react';
+import { PasswordRow } from './PasswordRow';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
-
 import { TagManager } from './TagManager';
+import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
+import { Tag, Workspace } from '@/core/domain/models/password';
 
-export function PasswordTable() {
-    const [passwords, setPasswords] = useState<PasswordEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+interface PasswordTableProps {
+    passwords: PasswordDTO[];
+    tags: Tag[];
+    workspaces: Workspace[];
+    isBusy?: boolean;
+    onCreatePassword: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => Promise<void>;
+    onUpdatePassword: (
+        id: string,
+        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null }
+    ) => Promise<void>;
+    onDeletePassword: (id: string) => Promise<void>;
+    onDecryptPassword: (id: string) => Promise<string>;
+    onCreateTag: (name: string) => Promise<Tag>;
+    onCreateWorkspace: (name: string) => Promise<Workspace>;
+    onDeleteWorkspace: (id: string) => Promise<void>;
+}
+
+export function PasswordTable({
+    passwords,
+    tags,
+    workspaces,
+    isBusy,
+    onCreatePassword,
+    onUpdatePassword,
+    onDeletePassword,
+    onDecryptPassword,
+    onCreateTag,
+    onCreateWorkspace,
+    onDeleteWorkspace,
+}: PasswordTableProps) {
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [tags, setTags] = useState<import('./TagManager').Tag[]>([]);
-    const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-    const [workspaces, setWorkspaces] = useState<{ id: string; name: string }[]>([]);
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('all');
     const [newWorkspaceName, setNewWorkspaceName] = useState('');
-    const [workspaceError, setWorkspaceError] = useState<string | null>(null);
-    const [workspaceLoading, setWorkspaceLoading] = useState(false);
     const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<{ id: string; name: string } | null>(null);
+    const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+    const [workspaceError, setWorkspaceError] = useState<string | null>(null);
 
-    const fetchPasswords = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch('/api/passwords');
-            if (!res.ok) throw new Error('Failed to fetch passwords');
-            const data = await res.json();
-            setPasswords(data);
-        } catch (err) {
-            setError('Error al cargar las contraseñas');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchPasswords();
-        fetchTags();
-        fetchWorkspaces();
-    }, []);
-
-    const fetchTags = async () => {
-        try {
-            const res = await fetch('/api/tags');
-            if (res.ok) {
-                const data = await res.json();
-                setTags(data);
-            }
-        } catch (error) {
-            console.error('Error fetching tags:', error);
-        }
-    };
-
-    const fetchWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/workspaces');
-            if (res.ok) {
-                const data = await res.json();
-                setWorkspaces(data);
-            }
-        } catch (error) {
-            console.error('Error fetching workspaces:', error);
-        }
-    };
-
-    const handleCreateWorkspace = async () => {
-        const name = newWorkspaceName.trim();
-        if (!name || workspaceLoading) return;
-
-        try {
-            setWorkspaceLoading(true);
-            setWorkspaceError(null);
-            const res = await fetch('/api/workspaces', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name }),
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Error al crear el espacio' }));
-                throw new Error(err.error || 'Error al crear el espacio');
-            }
-            const created = await res.json();
-            const next = [...workspaces, created].sort((a, b) => a.name.localeCompare(b.name));
-            setWorkspaces(next);
-            setSelectedWorkspaceId(created.id);
-            setNewWorkspaceName('');
-        } catch (err) {
-            setWorkspaceError(err instanceof Error ? err.message : 'Error al crear el espacio');
-        } finally {
-            setWorkspaceLoading(false);
-        }
-    };
-
-    const handleDeleteWorkspaceRequest = (id: string, name: string) => {
-        setDeleteWorkspaceTarget({ id, name });
-    };
-
-    const handleDeleteWorkspaceConfirm = async () => {
-        if (!deleteWorkspaceTarget) return;
-
-        try {
-            const res = await fetch(`/api/workspaces/${deleteWorkspaceTarget.id}`, {
-                method: 'DELETE',
-            });
-            if (!res.ok) throw new Error('Failed to delete workspace');
-            
-            setWorkspaces(workspaces.filter((w) => w.id !== deleteWorkspaceTarget.id));
-            
-            // Si el workspace eliminado estaba seleccionado, cambiar a 'all'
-            if (selectedWorkspaceId === deleteWorkspaceTarget.id) {
-                setSelectedWorkspaceId('all');
-            }
-            
-            // Actualizar las contraseñas para reflejar el cambio
-            await fetchPasswords();
-            
-            setDeleteWorkspaceTarget(null);
-        } catch (err) {
-            console.error('Error deleting workspace:', err);
-            setDeleteWorkspaceTarget(null);
-        }
-    };
-
-    const handleSave = async (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => {
-        const res = await fetch('/api/passwords', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ...data,
-                tagId: data.tagId?.trim() ? data.tagId : undefined,
-                workspaceId: data.workspaceId?.toString().trim() ? data.workspaceId : undefined,
-            }),
-        });
-        if (!res.ok) throw new Error('Failed to create password');
-        const newPassword = await res.json();
-        setPasswords([newPassword, ...passwords]);
-        setIsAddingNew(false);
-    };
-
-    const handleUpdate = async (
-        id: string,
-        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null }
-    ) => {
-        const res = await fetch(`/api/passwords/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error('Failed to update password');
-        const updated = await res.json();
-        setPasswords(passwords.map((p) => (p.id === id ? updated : p)));
-    };
-
-    const handleDeleteRequest = (id: string, description: string) => {
-        setDeleteTarget({ id, description });
-    };
-
-    const handleDeleteConfirm = async () => {
-        if (!deleteTarget) return;
-
-        const res = await fetch(`/api/passwords/${deleteTarget.id}`, {
-            method: 'DELETE',
-        });
-        if (!res.ok) throw new Error('Failed to delete password');
-        setPasswords(passwords.filter((p) => p.id !== deleteTarget.id));
-        setDeleteTarget(null);
-    };
-
-    // Filtrar contraseñas según el término de búsqueda
-    const filteredPasswords = passwords.filter((password) => {
+    const filteredPasswords = useMemo(() => {
         const search = searchTerm.toLowerCase();
-        const matchesSearch =
-            password.username.toLowerCase().includes(search) ||
-            password.description.toLowerCase().includes(search) ||
-            (password.tag && password.tag.name.toLowerCase().includes(search));
+        return passwords.filter((password) => {
+            const matchesSearch =
+                password.username.toLowerCase().includes(search) ||
+                password.description.toLowerCase().includes(search) ||
+                (password.tag && password.tag.name.toLowerCase().includes(search));
 
-        const matchesTags = selectedTagIds.length === 0 || (password.tagId && selectedTagIds.includes(password.tagId));
+            const matchesTags = selectedTagIds.length === 0 || (password.tagId && selectedTagIds.includes(password.tagId));
 
-        const matchesWorkspace =
-            selectedWorkspaceId === 'all'
-                ? true
-                : selectedWorkspaceId === 'none'
-                    ? !password.workspaceId
-                    : password.workspaceId === selectedWorkspaceId;
+            const matchesWorkspace =
+                selectedWorkspaceId === 'all'
+                    ? true
+                    : selectedWorkspaceId === 'none'
+                        ? !password.workspaceId
+                        : password.workspaceId === selectedWorkspaceId;
 
-        return matchesSearch && matchesTags && matchesWorkspace;
-    });
+            return matchesSearch && matchesTags && matchesWorkspace;
+        });
+    }, [passwords, searchTerm, selectedTagIds, selectedWorkspaceId]);
 
-    const groupedPasswords = (() => {
-        const groups = new Map<string, { id: string; name: string; items: PasswordEntry[] }>();
+    const groupedPasswords = useMemo(() => {
+        const groups = new Map<string, { id: string; name: string; items: PasswordDTO[] }>();
 
         for (const password of filteredPasswords) {
             const key = password.workspaceId || 'none';
@@ -222,29 +99,53 @@ export function PasswordTable() {
 
         return orderedKeys
             .filter((key) => groups.has(key))
-                .map((key) => groups.get(key)!)
-                .filter((group) => group.items.length > 0 || (isAddingNew && group.id === selectedWorkspaceId));
-    })();
+            .map((key) => groups.get(key)!)
+            .filter((group) => group.items.length > 0 || (isAddingNew && group.id === selectedWorkspaceId));
+    }, [filteredPasswords, workspaces, isAddingNew, selectedWorkspaceId]);
 
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Cargando contraseñas...</p>
-            </div>
-        );
-    }
+    const handleSave = async (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => {
+        const tagId = data.tagId?.trim() ? data.tagId : undefined;
+        const workspaceId = data.workspaceId?.trim() ? data.workspaceId : null;
+        await onCreatePassword({ ...data, tagId, workspaceId });
+        setIsAddingNew(false);
+    };
 
-    if (error) {
-        return (
-            <div className="error-container">
-                <p>{error}</p>
-                <button onClick={fetchPasswords} className="btn-retry">
-                    Reintentar
-                </button>
-            </div>
-        );
-    }
+    const handleUpdate = async (
+        id: string,
+        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null },
+    ) => {
+        const tagId = data.tagId === undefined ? undefined : data.tagId?.trim() ? data.tagId : null;
+        const workspaceId = data.workspaceId === undefined ? undefined : data.workspaceId?.trim() ? data.workspaceId : null;
+        await onUpdatePassword(id, { ...data, tagId, workspaceId });
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return;
+        await onDeletePassword(deleteTarget.id);
+        setDeleteTarget(null);
+    };
+
+    const handleCreateWorkspace = async () => {
+        const name = newWorkspaceName.trim();
+        if (!name) return;
+        try {
+            const created = await onCreateWorkspace(name);
+            setNewWorkspaceName('');
+            setSelectedWorkspaceId(created.id);
+            setWorkspaceError(null);
+        } catch (error) {
+            setWorkspaceError(error instanceof Error ? error.message : 'No se pudo crear el espacio');
+        }
+    };
+
+    const handleDeleteWorkspaceConfirm = async () => {
+        if (!deleteWorkspaceTarget) return;
+        await onDeleteWorkspace(deleteWorkspaceTarget.id);
+        if (selectedWorkspaceId === deleteWorkspaceTarget.id) {
+            setSelectedWorkspaceId('all');
+        }
+        setDeleteWorkspaceTarget(null);
+    };
 
     return (
         <div className="workspace-layout">
@@ -265,11 +166,12 @@ export function PasswordTable() {
                         }}
                         placeholder="Nuevo espacio..."
                         className="input-field"
+                        disabled={isBusy}
                     />
                     <button
                         className="btn-add-small"
                         onClick={handleCreateWorkspace}
-                        disabled={workspaceLoading || !newWorkspaceName.trim()}
+                        disabled={isBusy || !newWorkspaceName.trim()}
                     >
                         +
                     </button>
@@ -306,9 +208,10 @@ export function PasswordTable() {
                                     className="workspace-delete-btn"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleDeleteWorkspaceRequest(workspace.id, workspace.name);
+                                        setDeleteWorkspaceTarget({ id: workspace.id, name: workspace.name });
                                     }}
                                     title="Eliminar espacio"
+                                    disabled={isBusy}
                                 >
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                                         <polyline points="3 6 5 6 21 6" />
@@ -336,7 +239,7 @@ export function PasswordTable() {
                     <button
                         onClick={() => setIsAddingNew(true)}
                         className="btn-add"
-                        disabled={isAddingNew}
+                        disabled={isAddingNew || isBusy}
                     >
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="12" y1="5" x2="12" y2="19" />
@@ -368,12 +271,12 @@ export function PasswordTable() {
                                 onChange={(e) => {
                                     if (e.target.value && !selectedTagIds.includes(e.target.value)) {
                                         setSelectedTagIds([...selectedTagIds, e.target.value]);
-                                        e.target.value = ''; // Reset select
+                                        e.target.value = '';
                                     }
                                 }}
                             >
                                 <option value="">Filtrar por Tags...</option>
-                                {tags.filter(t => !selectedTagIds.includes(t.id)).map(tag => (
+                                {tags.filter((t) => !selectedTagIds.includes(t.id)).map((tag) => (
                                     <option key={tag.id} value={tag.id}>{tag.name}</option>
                                 ))}
                             </select>
@@ -386,13 +289,13 @@ export function PasswordTable() {
 
                     {selectedTagIds.length > 0 && (
                         <div style={{ flexBasis: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                            {selectedTagIds.map(id => {
-                                const tag = tags.find(t => t.id === id);
+                            {selectedTagIds.map((id) => {
+                                const tag = tags.find((t) => t.id === id);
                                 return tag ? (
                                     <span key={id} className="tag-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                         {tag.name}
                                         <button
-                                            onClick={() => setSelectedTagIds(selectedTagIds.filter(tid => tid !== id))}
+                                            onClick={() => setSelectedTagIds(selectedTagIds.filter((tid) => tid !== id))}
                                             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(0,0,0,0.2)', width: '16px', height: '16px', border: 'none', cursor: 'pointer', color: 'currentColor' }}
                                         >
                                             ×
@@ -430,7 +333,7 @@ export function PasswordTable() {
                                     availableWorkspaces={workspaces}
                                     onSave={handleSave}
                                     onUpdate={handleUpdate}
-                                    onDelete={handleDeleteRequest}
+                                    onDelete={(id, description) => setDeleteTarget({ id, description })}
                                     onCancelNew={() => setIsAddingNew(false)}
                                 />
                             )}
@@ -448,7 +351,7 @@ export function PasswordTable() {
                                             defaultWorkspaceId={group.id === 'none' ? '' : group.id}
                                             onSave={handleSave}
                                             onUpdate={handleUpdate}
-                                            onDelete={handleDeleteRequest}
+                                            onDelete={(id, description) => setDeleteTarget({ id, description })}
                                             onCancelNew={() => setIsAddingNew(false)}
                                         />
                                     )}
@@ -460,7 +363,8 @@ export function PasswordTable() {
                                             availableWorkspaces={workspaces}
                                             onSave={handleSave}
                                             onUpdate={handleUpdate}
-                                            onDelete={handleDeleteRequest}
+                                            onDelete={(id, description) => setDeleteTarget({ id, description })}
+                                            onDecrypt={onDecryptPassword}
                                         />
                                     ))}
                                 </Fragment>
@@ -475,7 +379,7 @@ export function PasswordTable() {
                                 <path d="M7 11V7a5 5 0 0110 0v4" />
                             </svg>
                             <h3>No hay contraseñas guardadas</h3>
-                            <p>Haz clic en &quot;Nueva Contraseña&quot; para agregar tu primera entrada.</p>
+                            <p>Haz clic en "Nueva Contraseña" para agregar tu primera entrada.</p>
                         </div>
                     )}
 
@@ -486,7 +390,7 @@ export function PasswordTable() {
                                 <path d="m21 21-4.35-4.35" />
                             </svg>
                             <h3>No se encontraron resultados</h3>
-                            <p>No hay contraseñas que coincidan con &quot;{searchTerm}&quot;</p>
+                            <p>No hay contraseñas que coincidan con "{searchTerm}"</p>
                         </div>
                     )}
                 </div>
@@ -508,8 +412,10 @@ export function PasswordTable() {
 
             {isTagManagerOpen && (
                 <TagManager
+                    tags={tags}
                     onClose={() => setIsTagManagerOpen(false)}
-                    onTagsChange={fetchTags}
+                    onCreateTag={onCreateTag}
+                    isBusy={isBusy}
                 />
             )}
         </div>

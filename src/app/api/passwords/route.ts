@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { encrypt } from '@/lib/crypto';
+import { PrismaPasswordRepository } from '@/core/infrastructure/repositories/PrismaPasswordRepository';
+import { NodeCryptoService } from '@/core/infrastructure/crypto/NodeCryptoService';
+import { ListPasswordsUseCase } from '@/core/application/use-cases/passwords/ListPasswordsUseCase';
+import { CreatePasswordUseCase } from '@/core/application/use-cases/passwords/CreatePasswordUseCase';
 
 export const dynamic = 'force-dynamic';
+
+const repository = new PrismaPasswordRepository();
+const crypto = new NodeCryptoService();
 
 export async function GET() {
     const session = await auth();
@@ -12,23 +17,7 @@ export async function GET() {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const passwords = await prisma.password.findMany({
-        where: { userId: session.user.id },
-        select: {
-            id: true,
-            username: true,
-            description: true,
-            observation: true,
-            tag: true, // This will now fetch the relation
-            tagId: true,
-            workspace: true,
-            workspaceId: true,
-            createdAt: true,
-            updatedAt: true,
-        },
-        orderBy: { updatedAt: 'desc' },
-    });
-
+    const passwords = await new ListPasswordsUseCase(repository).execute(session.user.id);
     return NextResponse.json(passwords);
 }
 
@@ -42,47 +31,23 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { username, password, description, observation, tagId, workspaceId } = body;
-        const normalizedWorkspaceId =
-            typeof workspaceId === 'string' && workspaceId.trim() !== '' ? workspaceId : null;
-        const normalizedTagId =
-            typeof tagId === 'string' && tagId.trim() !== '' ? tagId : null;
-
-        
 
         if (!username || !password || !description) {
             return NextResponse.json(
                 { error: 'Username, password, and description are required' },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
-        // Cifrar usando la clave derivada del usuario
-        const { encrypted, iv, authTag } = encrypt(password, session.user.id);
-
-        const newPassword = await prisma.password.create({
-            data: {
-                userId: session.user.id,
-                username,
-                encryptedPassword: encrypted,
-                iv,
-                authTag,
-                description,
-                observation,
-                tagId: normalizedTagId ?? undefined,
-                workspaceId: normalizedWorkspaceId ?? undefined,
-            },
-            select: {
-                id: true,
-                username: true,
-                description: true,
-                observation: true,
-                tag: true, // Include the relation in response
-                tagId: true,
-                workspace: true,
-                workspaceId: true,
-                createdAt: true,
-                updatedAt: true,
-            },
+        const useCase = new CreatePasswordUseCase(repository, crypto);
+        const newPassword = await useCase.execute({
+            userId: session.user.id,
+            username,
+            password,
+            description,
+            observation,
+            tagId,
+            workspaceId,
         });
 
         return NextResponse.json(newPassword, { status: 201 });
@@ -90,7 +55,7 @@ export async function POST(request: Request) {
         console.error('Error creating password:', error);
         return NextResponse.json(
             { error: 'Failed to create password' },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

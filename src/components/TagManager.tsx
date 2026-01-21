@@ -1,55 +1,24 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
-
-export interface Tag {
-    id: string;
-    name: string;
-    color?: string | null;
-}
+import { useState } from 'react';
+import { Tag } from '@/core/domain/models/password';
 
 interface TagManagerProps {
+    tags: Tag[];
     onClose: () => void;
-    onTagsChange: () => void; // To refresh tags in parent
+    onCreateTag: (name: string) => Promise<Tag>;
+    isBusy?: boolean;
 }
 
-export function TagManager({ onClose, onTagsChange }: TagManagerProps) {
-    const [tags, setTags] = useState<Tag[]>([]);
+export function TagManager({ tags, onClose, onCreateTag, isBusy }: TagManagerProps) {
     const [newTagName, setNewTagName] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        fetchTags();
-    }, []);
-
-    const fetchTags = async () => {
-        const res = await fetch('/api/tags');
-        if (res.ok) {
-            const data = await res.json();
-            setTags(data);
-        }
-    };
 
     const handleCreateTag = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTagName.trim()) return;
-
-        setLoading(true);
-        try {
-            const res = await fetch('/api/tags', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newTagName }),
-            });
-
-            if (res.ok) {
-                setNewTagName('');
-                fetchTags();
-                onTagsChange();
-            }
-        } finally {
-            setLoading(false);
-        }
+        await onCreateTag(newTagName.trim());
+        setNewTagName('');
     };
 
     return (
@@ -68,7 +37,7 @@ export function TagManager({ onClose, onTagsChange }: TagManagerProps) {
                         className="input-field"
                         style={{ flex: 1 }}
                     />
-                    <button type="submit" className="btn-add" disabled={loading || !newTagName.trim()}>
+                    <button type="submit" className="btn-add" disabled={isBusy || !newTagName.trim()}>
                         Agregar
                     </button>
                 </form>

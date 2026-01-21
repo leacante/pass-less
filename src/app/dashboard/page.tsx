@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { DashboardClient } from './DashboardClient';
+import { DashboardShell } from './DashboardShell';
+import { loadDashboardData } from './actions';
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -9,5 +10,14 @@ export default async function DashboardPage() {
         redirect('/');
     }
 
-    return <DashboardClient user={session.user} />;
+    const { passwords, tags, workspaces } = await loadDashboardData();
+
+    return (
+        <DashboardShell
+            user={session.user}
+            initialPasswords={passwords}
+            initialTags={tags}
+            initialWorkspaces={workspaces}
+        />
+    );
 }
