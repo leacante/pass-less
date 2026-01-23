@@ -956,6 +956,57 @@ textarea.input {
   background: var(--bg-gray);
 }
 
+/* Password form layout */
+.editing-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "username password password"
+    "description tag workspace";
+  gap: var(--space-sm);
+  align-items: start;
+}
+
+.form-grid-span-2 {
+  grid-column: span 2;
+}
+
+.form-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.field-username {
+  grid-area: username;
+}
+
+.field-password {
+  grid-area: password;
+}
+
+.field-description {
+  grid-area: description;
+}
+
+.field-tag {
+  grid-area: tag;
+}
+
+.field-workspace {
+  grid-area: workspace;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
 /* Action Buttons */
 .btn-save {
   display: inline-flex;
@@ -1404,5 +1455,24 @@ textarea.input {
   .password-table th,
   .password-table td {
     padding: var(--space-sm) var(--space-md);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "username"
+      "password"
+      "description"
+      "tag"
+      "workspace";
+  }
+
+  .form-grid-span-2 {
+    grid-column: span 1;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

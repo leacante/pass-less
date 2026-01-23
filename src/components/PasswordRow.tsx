@@ -103,16 +103,16 @@ export function PasswordRow({
             <tr className="password-row editing">
                 <td colSpan={4}>
                     <div className="editing-form">
-                        <div className="form-row">
+                        <div className="form-grid">
                             <input
                                 type="text"
                                 value={formData.username}
                                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                 placeholder="Usuario"
-                                className="input-field"
+                                className="input-field field-username"
                                 autoFocus
                             />
-                            <div className="password-input-group">
+                            <div className="password-input-group field-password">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={formData.password}
@@ -147,13 +147,12 @@ export function PasswordRow({
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 placeholder="Descripción / Servicio"
-                                className="input-field"
+                                className="input-field field-description"
                             />
                             <select
                                 value={formData.tagId}
                                 onChange={(e) => setFormData({ ...formData, tagId: e.target.value })}
-                                className="input-field"
-                                style={{ maxWidth: '150px' }}
+                                className="input-field field-tag"
                             >
                                 <option value="">Sin Tag</option>
                                 {availableTags.map((tag) => (
@@ -165,8 +164,7 @@ export function PasswordRow({
                             <select
                                 value={formData.workspaceId}
                                 onChange={(e) => setFormData({ ...formData, workspaceId: e.target.value })}
-                                className="input-field"
-                                style={{ maxWidth: '170px' }}
+                                className="input-field field-workspace"
                             >
                                 <option value="">Sin espacio</option>
                                 {availableWorkspaces.map((workspace) => (
@@ -176,7 +174,7 @@ export function PasswordRow({
                                 ))}
                             </select>
                         </div>
-                        <div className="form-row">
+                        <div className="form-grid form-grid--single">
                             <MDEditor
                                 value={formData.observation}
                                 onChange={(e) => setFormData({ ...formData, observation: e || '' })}
