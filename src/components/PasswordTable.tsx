@@ -46,6 +46,8 @@ export function PasswordTable({
     const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<{ id: string; name: string } | null>(null);
     const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+    const [draggedPasswordId, setDraggedPasswordId] = useState<string | null>(null);
+    const [dragOverWorkspaceId, setDragOverWorkspaceId] = useState<string | null>(null);
 
     const filteredPasswords = useMemo(() => {
         const search = searchTerm.toLowerCase();
@@ -115,7 +117,8 @@ export function PasswordTable({
         data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null },
     ) => {
         const tagId = data.tagId === undefined ? undefined : data.tagId?.trim() ? data.tagId : null;
-        const workspaceId = data.workspaceId === undefined ? undefined : data.workspaceId?.trim() ? data.workspaceId : null;
+        const workspaceId = data.workspaceId === undefined ? undefined : typeof data.workspaceId === 'string' ? (data.workspaceId.trim() ? data.workspaceId : null) : data.workspaceId;
+        console.log('handleUpdate called with:', { id, data, workspaceId });
         await onUpdatePassword(id, { ...data, tagId, workspaceId });
     };
 
@@ -145,6 +148,57 @@ export function PasswordTable({
             setSelectedWorkspaceId('all');
         }
         setDeleteWorkspaceTarget(null);
+    };
+
+    const handleDragStart = (passwordId: string) => {
+        setDraggedPasswordId(passwordId);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedPasswordId(null);
+        setDragOverWorkspaceId(null);
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (workspaceId: string | null, e: React.DragEvent<HTMLTableRowElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOverWorkspaceId(null);
+        
+        const passwordId = draggedPasswordId;
+        console.log('Drop event - passwordId:', passwordId, 'workspaceId:', workspaceId);
+        if (!passwordId) {
+            console.log('No passwordId found');
+            return;
+        }
+
+        // Find the password being dragged
+        const password = passwords.find((p) => p.id === passwordId);
+        if (!password) {
+            console.log('Password not found');
+            return;
+        }
+
+        console.log('Current workspace:', password.workspaceId, 'Target workspace:', workspaceId);
+
+        // Don't update if it's already in the target workspace
+        if (password.workspaceId === workspaceId) {
+            console.log('Password already in target workspace');
+            setDraggedPasswordId(null);
+            return;
+        }
+
+        // Update the password with the new workspace
+        console.log('Updating password to workspace:', workspaceId);
+        await handleUpdate(passwordId, {
+            workspaceId: workspaceId,
+        });
+
+        setDraggedPasswordId(null);
     };
 
     return (
@@ -335,11 +389,19 @@ export function PasswordTable({
                                     onUpdate={handleUpdate}
                                     onDelete={(id, description) => setDeleteTarget({ id, description })}
                                     onCancelNew={() => setIsAddingNew(false)}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
                                 />
                             )}
                             {groupedPasswords.map((group) => (
                                 <Fragment key={group.id}>
-                                    <tr className="workspace-separator">
+                                    <tr 
+                                        className={`workspace-separator ${dragOverWorkspaceId === group.id ? 'drag-over' : ''}`}
+                                        onDragOver={handleDragOver}
+                                        onDragEnter={() => setDragOverWorkspaceId(group.id)}
+                                        onDragLeave={() => draggedPasswordId && setDragOverWorkspaceId(null)}
+                                        onDrop={(e) => handleDrop(group.id === 'none' ? null : group.id, e)}
+                                    >
                                         <td colSpan={4}>{group.name}</td>
                                     </tr>
                                     {isAddingNew && selectedWorkspaceId === group.id && (
@@ -353,6 +415,8 @@ export function PasswordTable({
                                             onUpdate={handleUpdate}
                                             onDelete={(id, description) => setDeleteTarget({ id, description })}
                                             onCancelNew={() => setIsAddingNew(false)}
+                                            onDragStart={handleDragStart}
+                                            onDragEnd={handleDragEnd}
                                         />
                                     )}
                                     {group.items.map((password) => (
@@ -365,6 +429,8 @@ export function PasswordTable({
                                             onUpdate={handleUpdate}
                                             onDelete={(id, description) => setDeleteTarget({ id, description })}
                                             onDecrypt={onDecryptPassword}
+                                            onDragStart={handleDragStart}
+                                            onDragEnd={handleDragEnd}
                                         />
                                     ))}
                                 </Fragment>

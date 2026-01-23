@@ -20,6 +20,8 @@ interface PasswordRowProps {
     onDelete: (id: string, description: string) => void;
     onCancelNew?: () => void;
     onDecrypt?: (id: string) => Promise<string>;
+    onDragStart?: (id: string) => void;
+    onDragEnd?: () => void;
 }
 
 export function PasswordRow({
@@ -33,6 +35,8 @@ export function PasswordRow({
     onDelete,
     onCancelNew,
     onDecrypt,
+    onDragStart,
+    onDragEnd,
 }: PasswordRowProps) {
     const [isEditing, setIsEditing] = useState(isNew);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -225,9 +229,23 @@ export function PasswordRow({
 
     if (!entry) return null;
 
+    const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>) => {
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart?.(entry.id);
+    };
+
+    const handleDragEnd = () => {
+        onDragEnd?.();
+    };
+
     return (
         <>
-            <tr className={`password-row ${isExpanded ? 'expanded' : ''}`}>
+            <tr 
+                className={`password-row ${isExpanded ? 'expanded' : ''} draggable-row`}
+                draggable
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
                 <td>
                     <div className="cell-content">
                         <button
