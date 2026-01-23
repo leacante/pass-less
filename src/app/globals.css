@@ -851,16 +851,47 @@ textarea.input {
 }
 
 .workspace-separator td {
-  padding: var(--space-sm) var(--space-lg);
+  padding: 0;
   background: var(--bg-green);
   color: var(--text-primary);
+  border-bottom: var(--border-width) solid var(--border-color);
+  border-top: var(--border-width) solid var(--border-color);
+  transition: all 100ms ease;
+}
+
+.workspace-separator-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 800;
-  border-bottom: var(--border-width) solid var(--border-color);
-  border-top: var(--border-width) solid var(--border-color);
-  transition: all 100ms ease;
+}
+
+.workspace-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: transform 100ms ease;
+  flex-shrink: 0;
+}
+
+.workspace-collapse-btn:hover {
+  background: var(--bg-mint);
+}
+
+.workspace-collapse-btn.collapsed {
+  transform: rotate(-90deg);
 }
 
 .workspace-separator.drag-over td {

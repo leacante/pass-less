@@ -48,6 +48,7 @@ export function PasswordTable({
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
     const [draggedPasswordId, setDraggedPasswordId] = useState<string | null>(null);
     const [dragOverWorkspaceId, setDragOverWorkspaceId] = useState<string | null>(null);
+    const [collapsedWorkspaces, setCollapsedWorkspaces] = useState<Set<string>>(new Set());
 
     const filteredPasswords = useMemo(() => {
         const search = searchTerm.toLowerCase();
@@ -157,6 +158,19 @@ export function PasswordTable({
     const handleDragEnd = () => {
         setDraggedPasswordId(null);
         setDragOverWorkspaceId(null);
+    };
+
+    const toggleWorkspaceCollapse = (workspaceId: string | null) => {
+        const key = workspaceId || 'none';
+        setCollapsedWorkspaces((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(key)) {
+                newSet.delete(key);
+            } else {
+                newSet.add(key);
+            }
+            return newSet;
+        });
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>) => {
@@ -393,48 +407,68 @@ export function PasswordTable({
                                     onDragEnd={handleDragEnd}
                                 />
                             )}
-                            {groupedPasswords.map((group) => (
-                                <Fragment key={group.id}>
-                                    <tr 
-                                        className={`workspace-separator ${dragOverWorkspaceId === group.id ? 'drag-over' : ''}`}
-                                        onDragOver={handleDragOver}
-                                        onDragEnter={() => setDragOverWorkspaceId(group.id)}
-                                        onDragLeave={() => draggedPasswordId && setDragOverWorkspaceId(null)}
-                                        onDrop={(e) => handleDrop(group.id === 'none' ? null : group.id, e)}
-                                    >
-                                        <td colSpan={4}>{group.name}</td>
-                                    </tr>
-                                    {isAddingNew && selectedWorkspaceId === group.id && (
-                                        <PasswordRow
-                                            entry={null}
-                                            isNew
-                                            availableTags={tags}
-                                            availableWorkspaces={workspaces}
-                                            defaultWorkspaceId={group.id === 'none' ? '' : group.id}
-                                            onSave={handleSave}
-                                            onUpdate={handleUpdate}
-                                            onDelete={(id, description) => setDeleteTarget({ id, description })}
-                                            onCancelNew={() => setIsAddingNew(false)}
-                                            onDragStart={handleDragStart}
-                                            onDragEnd={handleDragEnd}
-                                        />
-                                    )}
-                                    {group.items.map((password) => (
-                                        <PasswordRow
-                                            key={password.id}
-                                            entry={password}
-                                            availableTags={tags}
-                                            availableWorkspaces={workspaces}
-                                            onSave={handleSave}
-                                            onUpdate={handleUpdate}
-                                            onDelete={(id, description) => setDeleteTarget({ id, description })}
-                                            onDecrypt={onDecryptPassword}
-                                            onDragStart={handleDragStart}
-                                            onDragEnd={handleDragEnd}
-                                        />
-                                    ))}
-                                </Fragment>
-                            ))}
+                            {groupedPasswords.map((group) => {
+                                const isCollapsed = collapsedWorkspaces.has(group.id);
+                                return (
+                                    <Fragment key={group.id}>
+                                        <tr 
+                                            className={`workspace-separator ${dragOverWorkspaceId === group.id ? 'drag-over' : ''}`}
+                                            onDragOver={handleDragOver}
+                                            onDragEnter={() => setDragOverWorkspaceId(group.id)}
+                                            onDragLeave={() => draggedPasswordId && setDragOverWorkspaceId(null)}
+                                            onDrop={(e) => handleDrop(group.id === 'none' ? null : group.id, e)}
+                                        >
+                                            <td colSpan={4}>
+                                                <div className="workspace-separator-header">
+                                                    <button 
+                                                        className={`workspace-collapse-btn ${isCollapsed ? 'collapsed' : ''}`}
+                                                        onClick={() => toggleWorkspaceCollapse(group.id === 'none' ? null : group.id)}
+                                                        title={isCollapsed ? 'Expandir' : 'Contraer'}
+                                                    >
+                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <polyline points={isCollapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'} />
+                                                        </svg>
+                                                    </button>
+                                                    <span>{group.name}</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {!isCollapsed && (
+                                            <>
+                                                {isAddingNew && selectedWorkspaceId === group.id && (
+                                                    <PasswordRow
+                                                        entry={null}
+                                                        isNew
+                                                        availableTags={tags}
+                                                        availableWorkspaces={workspaces}
+                                                        defaultWorkspaceId={group.id === 'none' ? '' : group.id}
+                                                        onSave={handleSave}
+                                                        onUpdate={handleUpdate}
+                                                        onDelete={(id, description) => setDeleteTarget({ id, description })}
+                                                        onCancelNew={() => setIsAddingNew(false)}
+                                                        onDragStart={handleDragStart}
+                                                        onDragEnd={handleDragEnd}
+                                                    />
+                                                )}
+                                                {group.items.map((password) => (
+                                                    <PasswordRow
+                                                        key={password.id}
+                                                        entry={password}
+                                                        availableTags={tags}
+                                                        availableWorkspaces={workspaces}
+                                                        onSave={handleSave}
+                                                        onUpdate={handleUpdate}
+                                                        onDelete={(id, description) => setDeleteTarget({ id, description })}
+                                                        onDecrypt={onDecryptPassword}
+                                                        onDragStart={handleDragStart}
+                                                        onDragEnd={handleDragEnd}
+                                                    />
+                                                ))}
+                                            </>
+                                        )}
+                                    </Fragment>
+                                );
+                            })}
                         </tbody>
                     </table>
 
