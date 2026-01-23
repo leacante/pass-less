@@ -47,6 +47,24 @@ export function PasswordRow({
         workspaceId: entry?.workspaceId || defaultWorkspaceId || '',
     });
 
+    const generateSecurePassword = () => {
+        const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lower = 'abcdefghijklmnopqrstuvwxyz';
+        const digits = '0123456789';
+        const symbols = '!@#$%^&*()-_=+[]{};:,.<>?';
+        const all = upper + lower + digits + symbols;
+        const take = (source: string) => source[Math.floor(Math.random() * source.length)];
+
+        const base = [take(upper), take(lower), take(digits), take(symbols)];
+        const rest = Array.from({ length: 12 }, () => take(all));
+        const mix = [...base, ...rest]
+            .sort(() => Math.random() - 0.5)
+            .join('');
+
+        setFormData((prev) => ({ ...prev, password: mix }));
+        setShowPassword(true);
+    };
+
     const handleSave = async () => {
         if (!formData.username || !formData.description) return;
         if (isNew && !formData.password) return;
@@ -118,8 +136,16 @@ export function PasswordRow({
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                     placeholder={isNew ? 'Contraseña' : 'Nueva contraseña (opcional)'}
-                                    className="input-field input-with-icon"
+                                    className="input-field"
                                 />
+                                <button
+                                    type="button"
+                                    className="btn-generate-password"
+                                    onClick={generateSecurePassword}
+                                    aria-label="Generar contraseña segura"
+                                >
+                                    Generar
+                                </button>
                                 <button
                                     type="button"
                                     className="btn-toggle-visibility"

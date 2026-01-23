@@ -930,27 +930,30 @@ textarea.input {
 }
 
 .password-input-group {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: var(--space-sm);
   width: 100%;
 }
 
-.input-with-icon {
-  padding-right: 2.5rem;
+.password-input-group .input-field {
+  flex: 1;
 }
 
+.btn-generate-password,
 .btn-toggle-visibility {
-  position: absolute;
-  right: var(--space-sm);
-  padding: var(--space-xs);
-  color: var(--text-muted);
-  background: transparent;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  border: 2px solid var(--border-color);
   border-radius: var(--radius);
-  cursor: pointer;
   transition: all 50ms;
+  box-shadow: 2px 2px 0 var(--shadow-color);
 }
 
+.btn-generate-password:hover,
 .btn-toggle-visibility:hover {
   color: var(--text-primary);
   background: var(--bg-gray);
@@ -1465,6 +1468,17 @@ textarea.input {
       "description"
       "tag"
       "workspace";
+  }
+
+  .password-input-group {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .btn-generate-password,
+  .btn-toggle-visibility {
+    width: 100%;
+    justify-content: center;
   }
 
   .form-grid-span-2 {
