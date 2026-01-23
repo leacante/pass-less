@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest"
+    "test": "vitest",
+    "import:analyze": "ts-node scripts/import-fyi-data.ts",
+    "import:api": "ts-node scripts/import-via-api.ts",
+    "import:curl": "ts-node scripts/generate-curl-import.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

@@ -16,7 +16,7 @@ export class PrismaTagRepository implements TagRepository {
     const row = await prisma.tag.create({
       data: {
         name: data.name,
-        color: data.color,
+        color: data.color || '#6366f1',
         userId: data.userId,
       },
     });
