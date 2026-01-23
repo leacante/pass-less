@@ -113,7 +113,11 @@ export async function decryptPasswordAction(id: string): Promise<string> {
 
 export async function createTagAction(input: { name: string; color?: string | null }): Promise<Tag> {
   const userId = await ensureUser();
-  return new CreateTagUseCase(tagRepo).execute({ ...input, userId });
+  return new CreateTagUseCase(tagRepo).execute({ 
+    name: input.name, 
+    userId,
+    color: input.color ?? undefined 
+  });
 }
 
 export async function createWorkspaceAction(input: { name: string }): Promise<Workspace> {
