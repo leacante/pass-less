@@ -267,7 +267,7 @@ textarea.input {
 
 /* ===== Layout ===== */
 .container {
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 var(--space-lg);
 }
@@ -534,8 +534,6 @@ textarea.input {
 .dashboard-main {
   flex: 1;
   padding: var(--space-2xl);
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -556,7 +554,8 @@ textarea.input {
 }
 
 .workspace-sidebar {
-  width: 280px;
+  min-width: 280px;
+  max-width: 320px;
   background: var(--bg-white);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius);
