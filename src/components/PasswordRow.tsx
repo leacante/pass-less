@@ -229,7 +229,14 @@ export function PasswordRow({
                     <div className="cell-content">
                         <span className="description">{entry.description}</span>
                         {entry.tag && (
-                            <span className="tag-badge">
+                            <span 
+                                className="tag-badge"
+                                style={{ 
+                                    backgroundColor: entry.tag.color,
+                                    color: '#1a1a1a',
+                                    fontWeight: 700,
+                                }}
+                            >
                                 {entry.tag.name}
                             </span>
                         )}

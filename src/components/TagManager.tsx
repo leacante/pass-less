@@ -48,7 +48,17 @@ export function TagManager({ tags, onClose, onCreateTag, isBusy }: TagManagerPro
                     ) : (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                             {tags.map(tag => (
-                                <span key={tag.id} className="tag-badge" style={{ fontSize: '0.9rem', padding: '0.25rem 0.75rem' }}>
+                                <span 
+                                    key={tag.id} 
+                                    className="tag-badge" 
+                                    style={{ 
+                                        backgroundColor: tag.color,
+                                        fontSize: '0.9rem', 
+                                        padding: '0.25rem 0.75rem',
+                                        color: '#1a1a1a',
+                                        fontWeight: 700,
+                                    }}
+                                >
                                     {tag.name}
                                 </span>
                             ))}

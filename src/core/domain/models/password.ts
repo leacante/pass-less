@@ -15,7 +15,7 @@ export interface Password {
 export interface Tag {
   id: string;
   name: string;
-  color?: string | null;
+  color: string;
 }
 
 export interface Workspace {
