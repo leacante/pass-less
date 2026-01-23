@@ -784,6 +784,8 @@ textarea.input {
 .password-table {
   width: 100%;
   border-collapse: collapse;
+  /* Fix layout so column widths apply predictably */
+  table-layout: fixed;
 }
 
 .password-table thead {
@@ -820,6 +822,27 @@ textarea.input {
   vertical-align: middle;
 }
 
+/* Column widths: make Usuario/Contraseña smaller than Descripción */
+.password-table th:nth-child(1),
+.password-table td:nth-child(1) { /* Usuario */
+  width: 18%;
+}
+
+.password-table th:nth-child(2),
+.password-table td:nth-child(2) { /* Contraseña */
+  width: 16%;
+}
+
+.password-table th:nth-child(3),
+.password-table td:nth-child(3) { /* Descripción / Servicio */
+  width: 52%;
+}
+
+.password-table th:nth-child(4),
+.password-table td:nth-child(4) { /* Acciones */
+  width: 14%;
+}
+
 .password-row.editing {
   background: var(--bg-blue);
 }
@@ -844,6 +867,64 @@ textarea.input {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+}
+
+/* Allow description text to take available space and wrap nicely */
+.description {
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0; /* enables wrapping inside fixed-layout flex cell */
+  word-break: break-word;
+}
+
+/* Prevent text overlap in narrow columns */
+.password-table td:nth-child(1) .cell-content,
+.password-table td:nth-child(2) .cell-content,
+.password-table td:nth-child(3) .cell-content {
+  min-width: 0;
+}
+
+.password-table td:nth-child(1) .username { /* Usuario column text */
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.password-table td:nth-child(2) .password-dots,
+.password-table td:nth-child(1) .btn-expand,
+.password-table td:nth-child(1) .copy-button,
+.password-table td:nth-child(2) .copy-button,
+.password-table td:nth-child(3) .tag-badge {
+  flex-shrink: 0; /* keep controls/badges visible without overlapping */
+}
+
+.password-table td:nth-child(3) .cell-content {
+  gap: var(--space-sm); /* tighter gap for wider description cell */
+}
+
+/* Username column: tighten gap so text has room to wrap */
+.password-table td:nth-child(1) .cell-content {
+  gap: var(--space-sm);
+}
+
+/* Password column: avoid overlap with description */
+.password-table td:nth-child(2) {
+  overflow: hidden; /* clip within the column width */
+}
+
+.password-table td:nth-child(2) .cell-content {
+  gap: var(--space-sm);
+}
+
+.password-table td:nth-child(2) .copy-button {
+  padding: 0.25rem 0.5rem; /* make the button narrower in this column */
+}
+
+.password-table td:nth-child(2) .copy-label {
+  display: none !important; /* hide text label to keep button compact */
 }
 
 .btn-expand {
@@ -1134,6 +1215,23 @@ textarea.input {
   .copy-label {
     display: inline;
   }
+}
+
+/* User copy button: allow the username to live inside the button without overflowing */
+.copy-button.user {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  text-align: left;
+  min-width: 0;
+}
+
+.copy-button.user .copy-label {
+  display: inline;
 }
 
 /* Empty State */

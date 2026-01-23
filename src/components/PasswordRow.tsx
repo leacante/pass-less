@@ -239,8 +239,7 @@ export function PasswordRow({
                                 <polyline points={isExpanded ? '6 15 12 9 18 15' : '6 9 12 15 18 9'} />
                             </svg>
                         </button>
-                        <span className="username">{entry.username}</span>
-                        <CopyButton value={entry.username} label="Usuario" variant="user" />
+                        <CopyButton value={entry.username} label={entry.username} variant="user" />
                     </div>
                 </td>
                 <td>
