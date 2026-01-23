@@ -1,10 +1,11 @@
 import { Tag } from '@/core/domain/models/password';
 import { TagRepository } from '@/core/domain/repositories/TagRepository';
+import { getRandomTagColor } from '@/lib/tagColors';
 
 export interface CreateTagInput {
   userId: string;
   name: string;
-  color?: string | null;
+  color?: string;
 }
 
 export class CreateTagUseCase {
@@ -18,7 +19,7 @@ export class CreateTagUseCase {
     return this.repository.create({
       userId: input.userId,
       name: input.name.trim(),
-      color: input.color ?? null,
+      color: input.color ?? getRandomTagColor(),
     });
   }
 }

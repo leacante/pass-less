@@ -846,6 +846,29 @@ textarea.input {
   gap: var(--space-md);
 }
 
+.btn-expand {
+  padding: var(--space-xs);
+  color: var(--text-muted);
+  background: transparent;
+  border-radius: var(--radius);
+  transition: all 50ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+}
+
+.btn-expand:hover {
+  color: var(--text-primary);
+  background: var(--bg-gray);
+  border: 2px solid var(--border-color);
+}
+
+.btn-expand.active {
+  color: var(--text-primary);
+  background: var(--bg-mint);
+}
+
 .username {
   font-weight: 700;
   color: var(--text-primary);
@@ -907,30 +930,84 @@ textarea.input {
 }
 
 .password-input-group {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: var(--space-sm);
   width: 100%;
 }
 
-.input-with-icon {
-  padding-right: 2.5rem;
+.password-input-group .input-field {
+  flex: 1;
 }
 
+.btn-generate-password,
 .btn-toggle-visibility {
-  position: absolute;
-  right: var(--space-sm);
-  padding: var(--space-xs);
-  color: var(--text-muted);
-  background: transparent;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  border: 2px solid var(--border-color);
   border-radius: var(--radius);
-  cursor: pointer;
   transition: all 50ms;
+  box-shadow: 2px 2px 0 var(--shadow-color);
 }
 
+.btn-generate-password:hover,
 .btn-toggle-visibility:hover {
   color: var(--text-primary);
   background: var(--bg-gray);
+}
+
+/* Password form layout */
+.editing-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "username password password"
+    "description tag workspace";
+  gap: var(--space-sm);
+  align-items: start;
+}
+
+.form-grid-span-2 {
+  grid-column: span 2;
+}
+
+.form-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.field-username {
+  grid-area: username;
+}
+
+.field-password {
+  grid-area: password;
+}
+
+.field-description {
+  grid-area: description;
+}
+
+.field-tag {
+  grid-area: tag;
+}
+
+.field-workspace {
+  grid-area: workspace;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
 }
 
 /* Action Buttons */
@@ -1381,5 +1458,35 @@ textarea.input {
   .password-table th,
   .password-table td {
     padding: var(--space-sm) var(--space-md);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "username"
+      "password"
+      "description"
+      "tag"
+      "workspace";
+  }
+
+  .password-input-group {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .btn-generate-password,
+  .btn-toggle-visibility {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-grid-span-2 {
+    grid-column: span 1;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
