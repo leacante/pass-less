@@ -815,6 +815,23 @@ textarea.input {
   background: var(--bg-mint);
 }
 
+/* Alternating row colors for better readability */
+.password-row.row-even {
+  background: var(--bg-white);
+}
+
+.password-row.row-odd {
+  background: var(--bg-gray);
+}
+
+.password-row.row-even:hover {
+  background: var(--bg-mint);
+}
+
+.password-row.row-odd:hover {
+  background: var(--bg-mint);
+}
+
 .password-row td {
   padding: var(--space-md) var(--space-lg);
   border-bottom: 2px solid var(--bg-paper);

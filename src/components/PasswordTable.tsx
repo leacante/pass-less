@@ -500,7 +500,7 @@ export function PasswordTable({
                                                         onDragEnd={handleDragEnd}
                                                     />
                                                 )}
-                                                {group.items.map((password) => (
+                                                {group.items.map((password, index) => (
                                                     <PasswordRow
                                                         key={password.id}
                                                         entry={password}
@@ -512,6 +512,7 @@ export function PasswordTable({
                                                         onDecrypt={onDecryptPassword}
                                                         onDragStart={handleDragStart}
                                                         onDragEnd={handleDragEnd}
+                                                        rowIndex={index}
                                                     />
                                                 ))}
                                             </>

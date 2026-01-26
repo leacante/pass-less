@@ -12,6 +12,7 @@ interface PasswordRowProps {
     availableTags: Tag[];
     availableWorkspaces: Workspace[];
     defaultWorkspaceId?: string;
+    rowIndex?: number;
     onSave: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => Promise<void>;
     onUpdate: (
         id: string,
@@ -30,6 +31,7 @@ export function PasswordRow({
     availableTags,
     availableWorkspaces,
     defaultWorkspaceId,
+    rowIndex = 0,
     onSave,
     onUpdate,
     onDelete,
@@ -241,7 +243,7 @@ export function PasswordRow({
     return (
         <>
             <tr 
-                className={`password-row ${isExpanded ? 'expanded' : ''} draggable-row`}
+                className={`password-row ${isExpanded ? 'expanded' : ''} draggable-row ${rowIndex % 2 === 0 ? 'row-even' : 'row-odd'}`}
                 draggable
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
