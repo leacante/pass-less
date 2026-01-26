@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState, useRef, useEffect } from 'react';
 import { PasswordRow } from './PasswordRow';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { TagManager } from './TagManager';
@@ -49,6 +49,7 @@ export function PasswordTable({
     const [draggedPasswordId, setDraggedPasswordId] = useState<string | null>(null);
     const [dragOverWorkspaceId, setDragOverWorkspaceId] = useState<string | null>(null);
     const [collapsedWorkspaces, setCollapsedWorkspaces] = useState<Set<string>>(new Set());
+    const autoScrollIntervalRef = useRef<number | null>(null);
 
     const filteredPasswords = useMemo(() => {
         const search = searchTerm.toLowerCase();
@@ -158,7 +159,56 @@ export function PasswordTable({
     const handleDragEnd = () => {
         setDraggedPasswordId(null);
         setDragOverWorkspaceId(null);
+        // Limpiar el intervalo de auto-scroll
+        if (autoScrollIntervalRef.current) {
+            window.clearInterval(autoScrollIntervalRef.current);
+            autoScrollIntervalRef.current = null;
+        }
     };
+
+    // Efecto para manejar el auto-scroll durante el drag
+    useEffect(() => {
+        if (!draggedPasswordId) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const scrollThreshold = 150; // píxeles desde el borde de la ventana
+            const scrollSpeed = 15; // píxeles por frame
+
+            const mouseY = e.clientY;
+            const windowHeight = window.innerHeight;
+            const distanceFromTop = mouseY;
+            const distanceFromBottom = windowHeight - mouseY;
+
+            // Limpiar intervalo previo
+            if (autoScrollIntervalRef.current) {
+                window.clearInterval(autoScrollIntervalRef.current);
+                autoScrollIntervalRef.current = null;
+            }
+
+            // Scroll hacia arriba cuando el cursor está cerca del borde superior
+            if (distanceFromTop < scrollThreshold && distanceFromTop > 0) {
+                autoScrollIntervalRef.current = window.setInterval(() => {
+                    window.scrollBy(0, -scrollSpeed);
+                }, 16); // ~60fps
+            }
+            // Scroll hacia abajo cuando el cursor está cerca del borde inferior
+            else if (distanceFromBottom < scrollThreshold && distanceFromBottom > 0) {
+                autoScrollIntervalRef.current = window.setInterval(() => {
+                    window.scrollBy(0, scrollSpeed);
+                }, 16); // ~60fps
+            }
+        };
+
+        document.addEventListener('dragover', handleMouseMove);
+
+        return () => {
+            document.removeEventListener('dragover', handleMouseMove);
+            if (autoScrollIntervalRef.current) {
+                window.clearInterval(autoScrollIntervalRef.current);
+                autoScrollIntervalRef.current = null;
+            }
+        };
+    }, [draggedPasswordId]);
 
     const toggleWorkspaceCollapse = (workspaceId: string | null) => {
         const key = workspaceId || 'none';
