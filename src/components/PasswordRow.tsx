@@ -236,9 +236,10 @@ export function PasswordRow({
                             <MDEditor
                                 value={formData.observation}
                                 onChange={(e) => setFormData({ ...formData, observation: e || '' })}
-                                className="input-field textarea-field"
-                                minHeight={200}
+                                className="input-field"
                                 
+                                minHeight={200}
+                                data-color-mode={theme}
                             />
                         </div>
                         <div className="form-actions">
