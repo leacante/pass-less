@@ -1589,6 +1589,19 @@ textarea.input {
   padding: var(--space-lg);
 }
 
+.observation-highlighted {
+  background-color: var(--bg-yellow);
+  padding: var(--space-md);
+  border-radius: var(--radius);
+}
+
+.observation-highlighted mark {
+  background-color: var(--accent-yellow);
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .title {

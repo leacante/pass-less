@@ -57,6 +57,7 @@ export function PasswordTable({
             const matchesSearch =
                 password.username.toLowerCase().includes(search) ||
                 password.description.toLowerCase().includes(search) ||
+                (password.observation && password.observation.toLowerCase().includes(search)) ||
                 (password.tag && password.tag.name.toLowerCase().includes(search));
 
             const matchesTags = selectedTagIds.length === 0 || (password.tagId && selectedTagIds.includes(password.tagId));
@@ -71,6 +72,12 @@ export function PasswordTable({
             return matchesSearch && matchesTags && matchesWorkspace;
         });
     }, [passwords, searchTerm, selectedTagIds, selectedWorkspaceId]);
+
+    const getSearchHighlight = (password: PasswordDTO) => {
+        const search = searchTerm.toLowerCase();
+        if (!search) return false;
+        return password.observation && password.observation.toLowerCase().includes(search);
+    };
 
     const groupedPasswords = useMemo(() => {
         const groups = new Map<string, { id: string; name: string; items: PasswordDTO[] }>();
@@ -513,6 +520,8 @@ export function PasswordTable({
                                                         onDragStart={handleDragStart}
                                                         onDragEnd={handleDragEnd}
                                                         rowIndex={index}
+                                                        shouldHighlightObservation={getSearchHighlight(password)}
+                                                        searchTerm={searchTerm}
                                                     />
                                                 ))}
                                             </>

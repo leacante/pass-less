@@ -13,6 +13,8 @@ interface PasswordRowProps {
     availableWorkspaces: Workspace[];
     defaultWorkspaceId?: string;
     rowIndex?: number;
+    shouldHighlightObservation?: boolean;
+    searchTerm?: string;
     onSave: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => Promise<void>;
     onUpdate: (
         id: string,
@@ -32,6 +34,8 @@ export function PasswordRow({
     availableWorkspaces,
     defaultWorkspaceId,
     rowIndex = 0,
+    shouldHighlightObservation = false,
+    searchTerm = '',
     onSave,
     onUpdate,
     onDelete,
@@ -41,7 +45,7 @@ export function PasswordRow({
     onDragEnd,
 }: PasswordRowProps) {
     const [isEditing, setIsEditing] = useState(isNew);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(shouldHighlightObservation);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
@@ -120,6 +124,12 @@ export function PasswordRow({
         if (!entry) return '';
         if (!onDecrypt) return '';
         return onDecrypt(entry.id);
+    };
+
+    const highlightObservation = (text: string, search: string) => {
+        if (!search) return text;
+        const regex = new RegExp(`(${search})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
     };
 
     if (isEditing) {
@@ -302,14 +312,24 @@ export function PasswordRow({
                 </td>
             </tr>
             {isExpanded && (
-                <tr className="observation-row">
+                <tr className={`observation-row ${shouldHighlightObservation ? 'highlight-observation' : ''}`}>
                     <td colSpan={4}>
                         <div className="observation-content">
                             <h4>Observaciones</h4>
                             {entry.observation ? (
-                                <div className="markdown-body">
-                                    <MDEditor.Markdown source={entry.observation} />
-                                </div>
+                                shouldHighlightObservation ? (
+                                    <div className="markdown-body observation-highlighted">
+                                        <div 
+                                            dangerouslySetInnerHTML={{ 
+                                                __html: highlightObservation(entry.observation, searchTerm) 
+                                            }} 
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="markdown-body">
+                                        <MDEditor.Markdown source={entry.observation} />
+                                    </div>
+                                )
                             ) : (
                                 <p className="no-observation">Sin observaciones.</p>
                             )}
