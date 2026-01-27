@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { PrismaTagRepository } from '@/core/infrastructure/repositories/PrismaTagRepository';
 import { DeleteTagUseCase } from '@/core/application/use-cases/tags/DeleteTagUseCase';
@@ -6,8 +6,8 @@ import { DeleteTagUseCase } from '@/core/application/use-cases/tags/DeleteTagUse
 const repository = new PrismaTagRepository();
 
 export async function DELETE(
-    request: Request,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth();
     if (!session || !session.user) {
@@ -15,7 +15,8 @@ export async function DELETE(
     }
 
     try {
-        const tagId = params.id;
+        const { id } = await params;
+        const tagId = id;
 
         if (!tagId) {
             return new NextResponse('Tag ID is required', { status: 400 });
