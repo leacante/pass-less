@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState, useRef, useEffect } from 'react';
 import { PasswordRow } from './PasswordRow';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { TagManager } from './TagManager';
@@ -20,6 +20,7 @@ interface PasswordTableProps {
     onDeletePassword: (id: string) => Promise<void>;
     onDecryptPassword: (id: string) => Promise<string>;
     onCreateTag: (name: string) => Promise<Tag>;
+    onDeleteTag?: (tagId: string) => Promise<void>;
     onCreateWorkspace: (name: string) => Promise<Workspace>;
     onDeleteWorkspace: (id: string) => Promise<void>;
 }
@@ -34,6 +35,7 @@ export function PasswordTable({
     onDeletePassword,
     onDecryptPassword,
     onCreateTag,
+    onDeleteTag,
     onCreateWorkspace,
     onDeleteWorkspace,
 }: PasswordTableProps) {
@@ -46,6 +48,10 @@ export function PasswordTable({
     const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<{ id: string; name: string } | null>(null);
     const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+    const [draggedPasswordId, setDraggedPasswordId] = useState<string | null>(null);
+    const [dragOverWorkspaceId, setDragOverWorkspaceId] = useState<string | null>(null);
+    const [collapsedWorkspaces, setCollapsedWorkspaces] = useState<Set<string>>(new Set());
+    const autoScrollIntervalRef = useRef<number | null>(null);
 
     const filteredPasswords = useMemo(() => {
         const search = searchTerm.toLowerCase();
@@ -53,6 +59,7 @@ export function PasswordTable({
             const matchesSearch =
                 password.username.toLowerCase().includes(search) ||
                 password.description.toLowerCase().includes(search) ||
+                (password.observation && password.observation.toLowerCase().includes(search)) ||
                 (password.tag && password.tag.name.toLowerCase().includes(search));
 
             const matchesTags = selectedTagIds.length === 0 || (password.tagId && selectedTagIds.includes(password.tagId));
@@ -67,6 +74,12 @@ export function PasswordTable({
             return matchesSearch && matchesTags && matchesWorkspace;
         });
     }, [passwords, searchTerm, selectedTagIds, selectedWorkspaceId]);
+
+    const getSearchHighlight = (password: PasswordDTO) => {
+        const search = searchTerm.toLowerCase();
+        if (!search) return false;
+        return password.observation && password.observation.toLowerCase().includes(search);
+    };
 
     const groupedPasswords = useMemo(() => {
         const groups = new Map<string, { id: string; name: string; items: PasswordDTO[] }>();
@@ -115,7 +128,8 @@ export function PasswordTable({
         data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null },
     ) => {
         const tagId = data.tagId === undefined ? undefined : data.tagId?.trim() ? data.tagId : null;
-        const workspaceId = data.workspaceId === undefined ? undefined : data.workspaceId?.trim() ? data.workspaceId : null;
+        const workspaceId = data.workspaceId === undefined ? undefined : typeof data.workspaceId === 'string' ? (data.workspaceId.trim() ? data.workspaceId : null) : data.workspaceId;
+        console.log('handleUpdate called with:', { id, data, workspaceId });
         await onUpdatePassword(id, { ...data, tagId, workspaceId });
     };
 
@@ -145,6 +159,119 @@ export function PasswordTable({
             setSelectedWorkspaceId('all');
         }
         setDeleteWorkspaceTarget(null);
+    };
+
+    const handleDragStart = (passwordId: string) => {
+        setDraggedPasswordId(passwordId);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedPasswordId(null);
+        setDragOverWorkspaceId(null);
+        // Limpiar el intervalo de auto-scroll
+        if (autoScrollIntervalRef.current) {
+            window.clearInterval(autoScrollIntervalRef.current);
+            autoScrollIntervalRef.current = null;
+        }
+    };
+
+    // Efecto para manejar el auto-scroll durante el drag
+    useEffect(() => {
+        if (!draggedPasswordId) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const scrollThreshold = 150; // píxeles desde el borde de la ventana
+            const scrollSpeed = 15; // píxeles por frame
+
+            const mouseY = e.clientY;
+            const windowHeight = window.innerHeight;
+            const distanceFromTop = mouseY;
+            const distanceFromBottom = windowHeight - mouseY;
+
+            // Limpiar intervalo previo
+            if (autoScrollIntervalRef.current) {
+                window.clearInterval(autoScrollIntervalRef.current);
+                autoScrollIntervalRef.current = null;
+            }
+
+            // Scroll hacia arriba cuando el cursor está cerca del borde superior
+            if (distanceFromTop < scrollThreshold && distanceFromTop > 0) {
+                autoScrollIntervalRef.current = window.setInterval(() => {
+                    window.scrollBy(0, -scrollSpeed);
+                }, 16); // ~60fps
+            }
+            // Scroll hacia abajo cuando el cursor está cerca del borde inferior
+            else if (distanceFromBottom < scrollThreshold && distanceFromBottom > 0) {
+                autoScrollIntervalRef.current = window.setInterval(() => {
+                    window.scrollBy(0, scrollSpeed);
+                }, 16); // ~60fps
+            }
+        };
+
+        document.addEventListener('dragover', handleMouseMove);
+
+        return () => {
+            document.removeEventListener('dragover', handleMouseMove);
+            if (autoScrollIntervalRef.current) {
+                window.clearInterval(autoScrollIntervalRef.current);
+                autoScrollIntervalRef.current = null;
+            }
+        };
+    }, [draggedPasswordId]);
+
+    const toggleWorkspaceCollapse = (workspaceId: string | null) => {
+        const key = workspaceId || 'none';
+        setCollapsedWorkspaces((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(key)) {
+                newSet.delete(key);
+            } else {
+                newSet.add(key);
+            }
+            return newSet;
+        });
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (workspaceId: string | null, e: React.DragEvent<HTMLTableRowElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOverWorkspaceId(null);
+        
+        const passwordId = draggedPasswordId;
+        console.log('Drop event - passwordId:', passwordId, 'workspaceId:', workspaceId);
+        if (!passwordId) {
+            console.log('No passwordId found');
+            return;
+        }
+
+        // Find the password being dragged
+        const password = passwords.find((p) => p.id === passwordId);
+        if (!password) {
+            console.log('Password not found');
+            return;
+        }
+
+        console.log('Current workspace:', password.workspaceId, 'Target workspace:', workspaceId);
+
+        // Don't update if it's already in the target workspace
+        if (password.workspaceId === workspaceId) {
+            console.log('Password already in target workspace');
+            setDraggedPasswordId(null);
+            return;
+        }
+
+        // Update the password with the new workspace
+        console.log('Updating password to workspace:', workspaceId);
+        await handleUpdate(passwordId, {
+            workspaceId: workspaceId,
+        });
+
+        setDraggedPasswordId(null);
     };
 
     return (
@@ -335,40 +462,75 @@ export function PasswordTable({
                                     onUpdate={handleUpdate}
                                     onDelete={(id, description) => setDeleteTarget({ id, description })}
                                     onCancelNew={() => setIsAddingNew(false)}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
                                 />
                             )}
-                            {groupedPasswords.map((group) => (
-                                <Fragment key={group.id}>
-                                    <tr className="workspace-separator">
-                                        <td colSpan={4}>{group.name}</td>
-                                    </tr>
-                                    {isAddingNew && selectedWorkspaceId === group.id && (
-                                        <PasswordRow
-                                            entry={null}
-                                            isNew
-                                            availableTags={tags}
-                                            availableWorkspaces={workspaces}
-                                            defaultWorkspaceId={group.id === 'none' ? '' : group.id}
-                                            onSave={handleSave}
-                                            onUpdate={handleUpdate}
-                                            onDelete={(id, description) => setDeleteTarget({ id, description })}
-                                            onCancelNew={() => setIsAddingNew(false)}
-                                        />
-                                    )}
-                                    {group.items.map((password) => (
-                                        <PasswordRow
-                                            key={password.id}
-                                            entry={password}
-                                            availableTags={tags}
-                                            availableWorkspaces={workspaces}
-                                            onSave={handleSave}
-                                            onUpdate={handleUpdate}
-                                            onDelete={(id, description) => setDeleteTarget({ id, description })}
-                                            onDecrypt={onDecryptPassword}
-                                        />
-                                    ))}
-                                </Fragment>
-                            ))}
+                            {groupedPasswords.map((group) => {
+                                const isCollapsed = collapsedWorkspaces.has(group.id);
+                                return (
+                                    <Fragment key={group.id}>
+                                        <tr 
+                                            className={`workspace-separator ${dragOverWorkspaceId === group.id ? 'drag-over' : ''}`}
+                                            onDragOver={handleDragOver}
+                                            onDragEnter={() => setDragOverWorkspaceId(group.id)}
+                                            onDragLeave={() => draggedPasswordId && setDragOverWorkspaceId(null)}
+                                            onDrop={(e) => handleDrop(group.id === 'none' ? null : group.id, e)}
+                                        >
+                                            <td colSpan={4}>
+                                                <div className="workspace-separator-header">
+                                                    <button 
+                                                        className={`workspace-collapse-btn ${isCollapsed ? 'collapsed' : ''}`}
+                                                        onClick={() => toggleWorkspaceCollapse(group.id === 'none' ? null : group.id)}
+                                                        title={isCollapsed ? 'Expandir' : 'Contraer'}
+                                                    >
+                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <polyline points={isCollapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'} />
+                                                        </svg>
+                                                    </button>
+                                                    <span>{group.name}</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {!isCollapsed && (
+                                            <>
+                                                {isAddingNew && selectedWorkspaceId === group.id && (
+                                                    <PasswordRow
+                                                        entry={null}
+                                                        isNew
+                                                        availableTags={tags}
+                                                        availableWorkspaces={workspaces}
+                                                        defaultWorkspaceId={group.id === 'none' ? '' : group.id}
+                                                        onSave={handleSave}
+                                                        onUpdate={handleUpdate}
+                                                        onDelete={(id, description) => setDeleteTarget({ id, description })}
+                                                        onCancelNew={() => setIsAddingNew(false)}
+                                                        onDragStart={handleDragStart}
+                                                        onDragEnd={handleDragEnd}
+                                                    />
+                                                )}
+                                                {group.items.map((password, index) => (
+                                                    <PasswordRow
+                                                        key={password.id}
+                                                        entry={password}
+                                                        availableTags={tags}
+                                                        availableWorkspaces={workspaces}
+                                                        onSave={handleSave}
+                                                        onUpdate={handleUpdate}
+                                                        onDelete={(id, description) => setDeleteTarget({ id, description })}
+                                                        onDecrypt={onDecryptPassword}
+                                                        onDragStart={handleDragStart}
+                                                        onDragEnd={handleDragEnd}
+                                                        rowIndex={index}
+                                                        shouldHighlightObservation={getSearchHighlight(password)}
+                                                        searchTerm={searchTerm}
+                                                    />
+                                                ))}
+                                            </>
+                                        )}
+                                    </Fragment>
+                                );
+                            })}
                         </tbody>
                     </table>
 
@@ -415,6 +577,7 @@ export function PasswordTable({
                     tags={tags}
                     onClose={() => setIsTagManagerOpen(false)}
                     onCreateTag={onCreateTag}
+                    onDeleteTag={onDeleteTag}
                     isBusy={isBusy}
                 />
             )}

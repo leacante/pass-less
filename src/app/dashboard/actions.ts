@@ -8,6 +8,7 @@ import { ListPasswordsUseCase } from '@/core/application/use-cases/passwords/Lis
 import { DecryptPasswordUseCase } from '@/core/application/use-cases/passwords/DecryptPasswordUseCase';
 import { ListTagsUseCase } from '@/core/application/use-cases/tags/ListTagsUseCase';
 import { CreateTagUseCase } from '@/core/application/use-cases/tags/CreateTagUseCase';
+import { DeleteTagUseCase } from '@/core/application/use-cases/tags/DeleteTagUseCase';
 import { ListWorkspacesUseCase } from '@/core/application/use-cases/workspaces/ListWorkspacesUseCase';
 import { CreateWorkspaceUseCase } from '@/core/application/use-cases/workspaces/CreateWorkspaceUseCase';
 import { DeleteWorkspaceUseCase } from '@/core/application/use-cases/workspaces/DeleteWorkspaceUseCase';
@@ -118,6 +119,11 @@ export async function createTagAction(input: { name: string; color?: string | nu
     userId,
     color: input.color ?? undefined 
   });
+}
+
+export async function deleteTagAction(tagId: string): Promise<void> {
+  const userId = await ensureUser();
+  await new DeleteTagUseCase(tagRepo).execute({ tagId, userId });
 }
 
 export async function createWorkspaceAction(input: { name: string }): Promise<Workspace> {

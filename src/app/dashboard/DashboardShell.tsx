@@ -50,6 +50,7 @@ export function DashboardShell({ user, initialPasswords, initialTags, initialWor
           onDeletePassword={controller.deletePassword}
           onDecryptPassword={controller.decryptPassword}
           onCreateTag={controller.createTag}
+          onDeleteTag={controller.deleteTag}
           onCreateWorkspace={controller.createWorkspace}
           onDeleteWorkspace={controller.deleteWorkspace}
         />

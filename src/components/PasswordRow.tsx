@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { CopyButton } from './CopyButton';
 import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
@@ -12,6 +12,9 @@ interface PasswordRowProps {
     availableTags: Tag[];
     availableWorkspaces: Workspace[];
     defaultWorkspaceId?: string;
+    rowIndex?: number;
+    shouldHighlightObservation?: boolean;
+    searchTerm?: string;
     onSave: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => Promise<void>;
     onUpdate: (
         id: string,
@@ -20,6 +23,8 @@ interface PasswordRowProps {
     onDelete: (id: string, description: string) => void;
     onCancelNew?: () => void;
     onDecrypt?: (id: string) => Promise<string>;
+    onDragStart?: (id: string) => void;
+    onDragEnd?: () => void;
 }
 
 export function PasswordRow({
@@ -28,16 +33,22 @@ export function PasswordRow({
     availableTags,
     availableWorkspaces,
     defaultWorkspaceId,
+    rowIndex = 0,
+    shouldHighlightObservation = false,
+    searchTerm = '',
     onSave,
     onUpdate,
     onDelete,
     onCancelNew,
     onDecrypt,
+    onDragStart,
+    onDragEnd,
 }: PasswordRowProps) {
     const [isEditing, setIsEditing] = useState(isNew);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(shouldHighlightObservation);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [formData, setFormData] = useState({
         username: entry?.username || '',
         password: '',
@@ -46,6 +57,21 @@ export function PasswordRow({
         tagId: entry?.tagId || '',
         workspaceId: entry?.workspaceId || defaultWorkspaceId || '',
     });
+
+    useEffect(() => {
+        const updateTheme = () => {
+            const htmlElement = document.documentElement;
+            const currentTheme = htmlElement.getAttribute('data-theme') as 'light' | 'dark' || 'light';
+            setTheme(currentTheme);
+        };
+
+        updateTheme();
+
+        const observer = new MutationObserver(updateTheme);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        return () => observer.disconnect();
+    }, []);
 
     const generateSecurePassword = () => {
         const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -114,6 +140,12 @@ export function PasswordRow({
         if (!entry) return '';
         if (!onDecrypt) return '';
         return onDecrypt(entry.id);
+    };
+
+    const highlightObservation = (text: string, search: string) => {
+        if (!search) return text;
+        const regex = new RegExp(`(${search})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
     };
 
     if (isEditing) {
@@ -204,9 +236,10 @@ export function PasswordRow({
                             <MDEditor
                                 value={formData.observation}
                                 onChange={(e) => setFormData({ ...formData, observation: e || '' })}
-                                className="input-field textarea-field"
-                                minHeight={200}
+                                className="input-field"
                                 
+                                minHeight={200}
+                                data-color-mode={theme}
                             />
                         </div>
                         <div className="form-actions">
@@ -225,9 +258,23 @@ export function PasswordRow({
 
     if (!entry) return null;
 
+    const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>) => {
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart?.(entry.id);
+    };
+
+    const handleDragEnd = () => {
+        onDragEnd?.();
+    };
+
     return (
         <>
-            <tr className={`password-row ${isExpanded ? 'expanded' : ''}`}>
+            <tr 
+                className={`password-row ${isExpanded ? 'expanded' : ''} draggable-row ${rowIndex % 2 === 0 ? 'row-even' : 'row-odd'}`}
+                draggable
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
                 <td>
                     <div className="cell-content">
                         <button
@@ -239,8 +286,7 @@ export function PasswordRow({
                                 <polyline points={isExpanded ? '6 15 12 9 18 15' : '6 9 12 15 18 9'} />
                             </svg>
                         </button>
-                        <span className="username">{entry.username}</span>
-                        <CopyButton value={entry.username} label="Usuario" variant="user" />
+                        <CopyButton value={entry.username} label={entry.username} variant="user" />
                     </div>
                 </td>
                 <td>
@@ -283,14 +329,26 @@ export function PasswordRow({
                 </td>
             </tr>
             {isExpanded && (
-                <tr className="observation-row">
+                <tr className={`observation-row ${shouldHighlightObservation ? 'highlight-observation' : ''}`}>
                     <td colSpan={4}>
                         <div className="observation-content">
                             <h4>Observaciones</h4>
                             {entry.observation ? (
-                                <div className="markdown-body">
-                                    <MDEditor.Markdown source={entry.observation} />
-                                </div>
+                                shouldHighlightObservation ? (
+                                    <div className="markdown-body observation-highlighted">
+                                        <div 
+                                            dangerouslySetInnerHTML={{ 
+                                                __html: highlightObservation(entry.observation, searchTerm) 
+                                            }} 
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="markdown-body" data-color-mode={theme}>
+                                        <MDEditor.Markdown source={entry.observation}
+                                         className="markdown-body observation-highlighted"
+                                        />
+                                    </div>
+                                )
                             ) : (
                                 <p className="no-observation">Sin observaciones.</p>
                             )}

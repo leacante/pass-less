@@ -8,17 +8,29 @@ interface TagManagerProps {
     tags: Tag[];
     onClose: () => void;
     onCreateTag: (name: string) => Promise<Tag>;
+    onDeleteTag?: (tagId: string) => Promise<void>;
     isBusy?: boolean;
 }
 
-export function TagManager({ tags, onClose, onCreateTag, isBusy }: TagManagerProps) {
+export function TagManager({ tags, onClose, onCreateTag, onDeleteTag, isBusy }: TagManagerProps) {
     const [newTagName, setNewTagName] = useState('');
+    const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
 
     const handleCreateTag = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTagName.trim()) return;
         await onCreateTag(newTagName.trim());
         setNewTagName('');
+    };
+
+    const handleDeleteTag = async (tagId: string) => {
+        if (!onDeleteTag) return;
+        setDeletingTagId(tagId);
+        try {
+            await onDeleteTag(tagId);
+        } finally {
+            setDeletingTagId(null);
+        }
     };
 
     return (
@@ -48,19 +60,42 @@ export function TagManager({ tags, onClose, onCreateTag, isBusy }: TagManagerPro
                     ) : (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                             {tags.map(tag => (
-                                <span 
-                                    key={tag.id} 
-                                    className="tag-badge" 
-                                    style={{ 
+                                <div
+                                    key={tag.id}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
                                         backgroundColor: tag.color,
-                                        fontSize: '0.9rem', 
-                                        padding: '0.25rem 0.75rem',
+                                        fontSize: '0.9rem',
+                                        padding: '0.25rem 0.5rem',
                                         color: '#1a1a1a',
                                         fontWeight: 700,
+                                        borderRadius: '0.25rem',
                                     }}
                                 >
-                                    {tag.name}
-                                </span>
+                                    <span>{tag.name}</span>
+                                    {onDeleteTag && (
+                                        <button
+                                            onClick={() => handleDeleteTag(tag.id)}
+                                            disabled={deletingTagId === tag.id || isBusy}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: 'inherit',
+                                                cursor: deletingTagId === tag.id || isBusy ? 'not-allowed' : 'pointer',
+                                                padding: '0',
+                                                marginLeft: '0.25rem',
+                                                fontSize: '1.1rem',
+                                                lineHeight: '1',
+                                                opacity: deletingTagId === tag.id || isBusy ? 0.5 : 1,
+                                            }}
+                                            title="Eliminar tag"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     )}

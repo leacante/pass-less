@@ -23,4 +23,13 @@ export class PrismaTagRepository implements TagRepository {
 
     return { id: row.id, name: row.name, color: row.color ?? null };
   }
+
+  async delete(tagId: string, userId: string): Promise<void> {
+    await prisma.tag.deleteMany({
+      where: {
+        id: tagId,
+        userId: userId,
+      },
+    });
+  }
 }

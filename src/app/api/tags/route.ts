@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { PrismaTagRepository } from '@/core/infrastructure/repositories/PrismaTagRepository';
 import { ListTagsUseCase } from '@/core/application/use-cases/tags/ListTagsUseCase';
 import { CreateTagUseCase } from '@/core/application/use-cases/tags/CreateTagUseCase';
+import { DeleteTagUseCase } from '@/core/application/use-cases/tags/DeleteTagUseCase';
 
 const repository = new PrismaTagRepository();
 

@@ -9,4 +9,5 @@ export interface CreateTagDTO {
 export interface TagRepository {
   listByUser(userId: string): Promise<Tag[]>;
   create(data: CreateTagDTO): Promise<Tag>;
+  delete(tagId: string, userId: string): Promise<void>;
 }

@@ -7,6 +7,7 @@ import {
   deletePasswordAction,
   decryptPasswordAction,
   createTagAction,
+  deleteTagAction,
   createWorkspaceAction,
   deleteWorkspaceAction,
 } from '@/app/dashboard/actions';
@@ -56,6 +57,12 @@ export function usePasswordController(initialState: PasswordControllerState) {
         const created = await createTagAction({ name });
         setTags((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
         return created;
+      }),
+    deleteTag: (tagId: string) =>
+      run(async () => {
+        await deleteTagAction(tagId);
+        setTags((prev) => prev.filter((item) => item.id !== tagId));
+        setPasswords((prev) => prev.map((item) => (item.tagId === tagId ? { ...item, tagId: null, tag: null } : item)));
       }),
     createWorkspace: (name: string) =>
       run(async () => {
