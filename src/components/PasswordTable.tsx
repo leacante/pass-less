@@ -20,6 +20,7 @@ interface PasswordTableProps {
     onDeletePassword: (id: string) => Promise<void>;
     onDecryptPassword: (id: string) => Promise<string>;
     onCreateTag: (name: string) => Promise<Tag>;
+    onDeleteTag?: (tagId: string) => Promise<void>;
     onCreateWorkspace: (name: string) => Promise<Workspace>;
     onDeleteWorkspace: (id: string) => Promise<void>;
 }
@@ -34,6 +35,7 @@ export function PasswordTable({
     onDeletePassword,
     onDecryptPassword,
     onCreateTag,
+    onDeleteTag,
     onCreateWorkspace,
     onDeleteWorkspace,
 }: PasswordTableProps) {
@@ -575,6 +577,7 @@ export function PasswordTable({
                     tags={tags}
                     onClose={() => setIsTagManagerOpen(false)}
                     onCreateTag={onCreateTag}
+                    onDeleteTag={onDeleteTag}
                     isBusy={isBusy}
                 />
             )}
