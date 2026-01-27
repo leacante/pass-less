@@ -78,7 +78,7 @@ export function PasswordTable({
     const getSearchHighlight = (password: PasswordDTO) => {
         const search = searchTerm.toLowerCase();
         if (!search) return false;
-        return password.observation && password.observation.toLowerCase().includes(search);
+        return !!(password.observation && password.observation.toLowerCase().includes(search));
     };
 
     const groupedPasswords = useMemo(() => {
