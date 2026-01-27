@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { CopyButton } from './CopyButton';
 import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
@@ -48,6 +48,7 @@ export function PasswordRow({
     const [isExpanded, setIsExpanded] = useState(shouldHighlightObservation);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [formData, setFormData] = useState({
         username: entry?.username || '',
         password: '',
@@ -56,6 +57,21 @@ export function PasswordRow({
         tagId: entry?.tagId || '',
         workspaceId: entry?.workspaceId || defaultWorkspaceId || '',
     });
+
+    useEffect(() => {
+        const updateTheme = () => {
+            const htmlElement = document.documentElement;
+            const currentTheme = htmlElement.getAttribute('data-theme') as 'light' | 'dark' || 'light';
+            setTheme(currentTheme);
+        };
+
+        updateTheme();
+
+        const observer = new MutationObserver(updateTheme);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        return () => observer.disconnect();
+    }, []);
 
     const generateSecurePassword = () => {
         const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -326,8 +342,10 @@ export function PasswordRow({
                                         />
                                     </div>
                                 ) : (
-                                    <div className="markdown-body">
-                                        <MDEditor.Markdown source={entry.observation} />
+                                    <div className="markdown-body" data-color-mode={theme}>
+                                        <MDEditor.Markdown source={entry.observation}
+                                         className="markdown-body observation-highlighted"
+                                        />
                                     </div>
                                 )
                             ) : (
