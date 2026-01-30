@@ -72,12 +72,14 @@ export async function createPasswordAction(input: {
   observation?: string | null;
   tagId?: string | null;
   workspaceId?: string | null;
+  masterPassword?: string | null;
 }): Promise<SerializablePassword> {
   const userId = await ensureUser();
 
   const passwordEntity = await new CreatePasswordUseCase(passwordRepo, crypto).execute({
     ...input,
     userId,
+    masterPassword: input.masterPassword ?? undefined,
   });
 
   return serializePassword(passwordEntity);
@@ -91,12 +93,14 @@ export async function updatePasswordAction(input: {
   observation?: string | null;
   tagId?: string | null;
   workspaceId?: string | null;
+  masterPassword?: string | null;
 }): Promise<SerializablePassword> {
   const userId = await ensureUser();
 
   const passwordEntity = await new UpdatePasswordUseCase(passwordRepo, crypto).execute({
     ...input,
     userId,
+    masterPassword: input.masterPassword ?? undefined,
   });
 
   return serializePassword(passwordEntity);
@@ -107,9 +111,23 @@ export async function deletePasswordAction(id: string): Promise<void> {
   await new DeletePasswordUseCase(passwordRepo).execute(id, userId);
 }
 
-export async function decryptPasswordAction(id: string): Promise<string> {
+export async function decryptPasswordAction(id: string, masterPassword?: string | null): Promise<string> {
   const userId = await ensureUser();
-  return new DecryptPasswordUseCase(passwordRepo, crypto).execute(id, userId);
+  
+  let passwordToUse = masterPassword ?? undefined;
+  
+  // Si no se proporciona password, obtenerlo de la sesión
+  if (!passwordToUse) {
+    const { getSession } = await import('@/lib/iron-session');
+    const session = await getSession();
+    passwordToUse = session?.masterPassword;
+  }
+  
+  if (!passwordToUse) {
+    throw new Error('Master password is required');
+  }
+  
+  return new DecryptPasswordUseCase(passwordRepo, crypto).execute(id, userId, passwordToUse);
 }
 
 export async function createTagAction(input: { name: string; color?: string | null }): Promise<Tag> {
@@ -134,4 +152,41 @@ export async function createWorkspaceAction(input: { name: string }): Promise<Wo
 export async function deleteWorkspaceAction(id: string): Promise<void> {
   const userId = await ensureUser();
   await new DeleteWorkspaceUseCase(workspaceRepo).execute(id, userId);
+}
+
+export async function migratePasswordsAction(input: { masterPassword: string }): Promise<{ migrated: number; skipped: number; failed: number }> {
+  const userId = await ensureUser();
+
+  if (!input.masterPassword || input.masterPassword.length < 8) {
+    throw new Error('Master password inválido');
+  }
+
+  const rows = await passwordRepo.listSecretsByUser(userId);
+
+  let migrated = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const row of rows) {
+    try {
+      // Si ya está encriptado con master password, no lo migramos
+      try {
+        crypto.decrypt(row.secret, userId, input.masterPassword);
+        skipped += 1;
+        continue;
+      } catch {
+        // No está migrado, continuar
+      }
+
+      const plaintext = crypto.decrypt(row.secret, userId);
+      const newSecret = crypto.encrypt(plaintext, userId, input.masterPassword);
+      await passwordRepo.update({ id: row.id, userId, secret: newSecret });
+      migrated += 1;
+    } catch (error) {
+      console.error('Failed to migrate password:', row.id, error);
+      failed += 1;
+    }
+  }
+
+  return { migrated, skipped, failed };
 }

@@ -25,7 +25,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     try {
         const body = await request.json();
-        const { username, password, description, observation, tagId, workspaceId } = body;
+        const { username, password, description, observation, tagId, workspaceId, masterPassword } = body;
 
         const updated = await new UpdatePasswordUseCase(repository, crypto).execute({
             id,
@@ -36,6 +36,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
             observation,
             tagId,
             workspaceId,
+            masterPassword,
         });
 
         return NextResponse.json(updated);

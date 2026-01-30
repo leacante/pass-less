@@ -4,6 +4,8 @@ import { Fragment, useMemo, useState, useRef, useEffect } from 'react';
 import { PasswordRow } from './PasswordRow';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { TagManager } from './TagManager';
+import MasterPasswordValidation from './MasterPasswordValidation';
+import { useIronSession } from './hooks/useIronSession';
 import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
 import { Tag, Workspace } from '@/core/domain/models/password';
 
@@ -12,17 +14,18 @@ interface PasswordTableProps {
     tags: Tag[];
     workspaces: Workspace[];
     isBusy?: boolean;
-    onCreatePassword: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => Promise<void>;
+    onCreatePassword: (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null; masterPassword?: string }) => Promise<void>;
     onUpdatePassword: (
         id: string,
-        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null }
+        data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null; masterPassword?: string }
     ) => Promise<void>;
     onDeletePassword: (id: string) => Promise<void>;
-    onDecryptPassword: (id: string) => Promise<string>;
+    onDecryptPassword: (id: string, masterPassword?: string) => Promise<string>;
     onCreateTag: (name: string) => Promise<Tag>;
     onDeleteTag?: (tagId: string) => Promise<void>;
     onCreateWorkspace: (name: string) => Promise<Workspace>;
     onDeleteWorkspace: (id: string) => Promise<void>;
+    hasMasterPassword: boolean;
 }
 
 export function PasswordTable({
@@ -38,6 +41,7 @@ export function PasswordTable({
     onDeleteTag,
     onCreateWorkspace,
     onDeleteWorkspace,
+    hasMasterPassword,
 }: PasswordTableProps) {
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
@@ -51,7 +55,24 @@ export function PasswordTable({
     const [draggedPasswordId, setDraggedPasswordId] = useState<string | null>(null);
     const [dragOverWorkspaceId, setDragOverWorkspaceId] = useState<string | null>(null);
     const [collapsedWorkspaces, setCollapsedWorkspaces] = useState<Set<string>>(new Set());
+    const [showMasterPasswordPrompt, setShowMasterPasswordPrompt] = useState(false);
+    const [promptContext, setPromptContext] = useState<'save' | 'decrypt'>('decrypt');
+    const [sessionMasterPassword, setSessionMasterPassword] = useState<string | null>(null);
+    const [pendingAction, setPendingAction] = useState<
+        | { type: 'create'; data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null } }
+        | { type: 'update'; id: string; data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null } }
+        | null
+    >(null);
+    const pendingDecryptRef = useRef<{ id: string; resolve: (value: string) => void; reject: (reason?: unknown) => void } | null>(null);
     const autoScrollIntervalRef = useRef<number | null>(null);
+    const { session } = useIronSession();
+
+    // Obtener master password de la sesión
+    useEffect(() => {
+        if (session?.masterPassword) {
+            setSessionMasterPassword(session.masterPassword);
+        }
+    }, [session?.masterPassword]);
 
     const filteredPasswords = useMemo(() => {
         const search = searchTerm.toLowerCase();
@@ -119,7 +140,16 @@ export function PasswordTable({
     const handleSave = async (data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null }) => {
         const tagId = data.tagId?.trim() ? data.tagId : undefined;
         const workspaceId = data.workspaceId?.trim() ? data.workspaceId : null;
-        await onCreatePassword({ ...data, tagId, workspaceId });
+        const payload = { ...data, tagId, workspaceId };
+
+        if (hasMasterPassword) {
+            setPendingAction({ type: 'create', data: payload });
+            setPromptContext('save');
+            setShowMasterPasswordPrompt(true);
+            return;
+        }
+
+        await onCreatePassword(payload);
         setIsAddingNew(false);
     };
 
@@ -129,8 +159,93 @@ export function PasswordTable({
     ) => {
         const tagId = data.tagId === undefined ? undefined : data.tagId?.trim() ? data.tagId : null;
         const workspaceId = data.workspaceId === undefined ? undefined : typeof data.workspaceId === 'string' ? (data.workspaceId.trim() ? data.workspaceId : null) : data.workspaceId;
-        console.log('handleUpdate called with:', { id, data, workspaceId });
-        await onUpdatePassword(id, { ...data, tagId, workspaceId });
+        const payload = { ...data, tagId, workspaceId };
+
+        if (hasMasterPassword) {
+            setPendingAction({ type: 'update', id, data: payload });
+            setPromptContext('save');
+            setShowMasterPasswordPrompt(true);
+            return;
+        }
+
+        await onUpdatePassword(id, payload);
+    };
+
+    const handleDecryptPassword = (id: string): Promise<string> => {
+        // Si el master password está en sesión, usarlo automáticamente
+        if (sessionMasterPassword) {
+            return onDecryptPassword(id);
+        }
+
+        // Si no hay master password configurado, desencriptar sin password
+        if (!hasMasterPassword) {
+            return onDecryptPassword(id);
+        }
+
+        // Si no está en sesión, solicitar al usuario para guardarlo
+        return new Promise((resolve, reject) => {
+            pendingDecryptRef.current = { id, resolve, reject };
+            setPromptContext('decrypt');
+            setShowMasterPasswordPrompt(true);
+        });
+    };
+
+    const handleMasterPasswordCancel = () => {
+        setShowMasterPasswordPrompt(false);
+        setPendingAction(null);
+        if (pendingDecryptRef.current) {
+            pendingDecryptRef.current.reject(new Error('cancelled'));
+            pendingDecryptRef.current = null;
+        }
+    };
+
+    const handleMasterPasswordSuccess = async (masterPassword: string) => {
+        try {
+            // Primero, guardar master password en sesión
+            const saveResponse = await fetch('/api/session/master-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ masterPassword }),
+            });
+
+            if (!saveResponse.ok) {
+                throw new Error('Failed to save master password to session');
+            }
+
+            // Actualizar estado local
+            setSessionMasterPassword(masterPassword);
+            setShowMasterPasswordPrompt(false);
+
+            // Esperar un poco para asegurar que la sesión se haya actualizado
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Luego ejecutar la acción pendiente
+            if (pendingDecryptRef.current) {
+                const { id, resolve, reject } = pendingDecryptRef.current;
+                pendingDecryptRef.current = null;
+                try {
+                    // Ahora el master password está en sesión, así que no lo pasamos
+                    const result = await onDecryptPassword(id);
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
+                return;
+            }
+
+            if (pendingAction?.type === 'create') {
+                // Para crear, sí necesitamos pasar el password
+                await onCreatePassword({ ...pendingAction.data, masterPassword });
+                setIsAddingNew(false);
+            }
+
+            if (pendingAction?.type === 'update') {
+                await onUpdatePassword(pendingAction.id, { ...pendingAction.data, masterPassword });
+            }
+        } finally {
+            setPendingAction(null);
+            setShowMasterPasswordPrompt(false);
+        }
     };
 
     const handleDeleteConfirm = async () => {
@@ -442,6 +557,22 @@ export function PasswordTable({
                 </div>
 
                 <div className="table-wrapper">
+                    {showMasterPasswordPrompt && (
+                        <div className="modal-overlay">
+                            <div className="modal-content">
+                                <MasterPasswordValidation
+                                    onSuccess={handleMasterPasswordSuccess}
+                                    onCancel={handleMasterPasswordCancel}
+                                    title={promptContext === 'save' ? 'Confirmar Master Password' : 'Desencriptar contraseña'}
+                                    message={
+                                        promptContext === 'save'
+                                            ? 'Se requiere tu master password para encriptar y guardar esta contraseña.'
+                                            : 'Se requiere tu master password para desencriptar la contraseña.'
+                                    }
+                                />
+                            </div>
+                        </div>
+                    )}
                     <table className="password-table">
                         <thead>
                             <tr>
@@ -518,7 +649,7 @@ export function PasswordTable({
                                                         onSave={handleSave}
                                                         onUpdate={handleUpdate}
                                                         onDelete={(id, description) => setDeleteTarget({ id, description })}
-                                                        onDecrypt={onDecryptPassword}
+                                                        onDecrypt={handleDecryptPassword}
                                                         onDragStart={handleDragStart}
                                                         onDragEnd={handleDragEnd}
                                                         rowIndex={index}

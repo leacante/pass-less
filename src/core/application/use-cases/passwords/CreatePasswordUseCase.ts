@@ -10,6 +10,7 @@ export interface CreatePasswordInput {
   observation?: string | null;
   tagId?: string | null;
   workspaceId?: string | null;
+  masterPassword?: string; // Opcional: si el usuario tiene master password configurado
 }
 
 export class CreatePasswordUseCase {
@@ -23,7 +24,7 @@ export class CreatePasswordUseCase {
       throw new Error('Username, password and description are required');
     }
 
-    const secret = this.encryption.encrypt(input.password, input.userId);
+    const secret = this.encryption.encrypt(input.password, input.userId, input.masterPassword);
 
     return this.repository.create({
       userId: input.userId,

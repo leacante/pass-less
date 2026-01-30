@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { username, password, description, observation, tagId, workspaceId } = body;
+        const { username, password, description, observation, tagId, workspaceId, masterPassword } = body;
 
         if (!username || !password || !description) {
             return NextResponse.json(
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
             observation,
             tagId,
             workspaceId,
+            masterPassword,
         });
 
         return NextResponse.json(newPassword, { status: 201 });

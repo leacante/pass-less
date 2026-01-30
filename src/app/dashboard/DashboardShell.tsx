@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { AuthButton } from '@/components/AuthButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PasswordTable } from '@/components/PasswordTable';
+import MasterPasswordSetup from '@/components/MasterPasswordSetup';
+import MasterPasswordValidation from '@/components/MasterPasswordValidation';
 import { usePasswordController } from '@/core/application/hooks/usePasswordController';
 import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
 import { Tag, Workspace } from '@/core/domain/models/password';
@@ -15,14 +18,108 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ user, initialPasswords, initialTags, initialWorkspaces }: DashboardShellProps) {
+  const [hasMasterPassword, setHasMasterPassword] = useState(false);
+  const [masterPasswordInSession, setMasterPasswordInSession] = useState<string | null>(null);
+  const [showMasterPasswordSetup, setShowMasterPasswordSetup] = useState(false);
+  const [showMigrationModal, setShowMigrationModal] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<{ migrated: number; skipped: number; failed: number } | null>(null);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const controller = usePasswordController({
     passwords: initialPasswords,
     tags: initialTags,
     workspaces: initialWorkspaces,
   });
 
+  // Verificar si el usuario tiene master password configurado y obtener de sesión
+  useEffect(() => {
+    const checkMasterPasswordStatus = async () => {
+      try {
+        // Obtener estado del master password
+        const profileResponse = await fetch('/api/users/profile');
+        const profileData = await profileResponse.json();
+        setHasMasterPassword(profileData.hasMasterPassword);
+        
+        // Obtener master password de la sesión si existe
+        const sessionResponse = await fetch('/api/session');
+        const sessionData = await sessionResponse.json();
+        if (sessionData.masterPassword) {
+          setMasterPasswordInSession(sessionData.masterPassword);
+        }
+        
+        // Mostrar setup si no tiene master password y no se ha rechazado antes
+        if (!profileData.hasMasterPassword && !sessionStorage.getItem('masterPasswordSetupDismissed')) {
+          setShowMasterPasswordSetup(true);
+        }
+      } catch (error) {
+        console.error('Error checking master password status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkMasterPasswordStatus();
+  }, []);
+
+  const handleMasterPasswordSetupSuccess = () => {
+    setShowMasterPasswordSetup(false);
+    setHasMasterPassword(true);
+  };
+
+  const handleMasterPasswordSetupCancel = () => {
+    setShowMasterPasswordSetup(false);
+    sessionStorage.setItem('masterPasswordSetupDismissed', 'true');
+  };
+
+  const handleMigrationStart = () => {
+    // Si ya existe master password en sesión, no mostrar modal
+    if (masterPasswordInSession) {
+      handleMigrationConfirm(masterPasswordInSession);
+    } else {
+      setMigrationError(null);
+      setShowMigrationModal(true);
+    }
+  };
+
+  const handleMigrationCancel = () => {
+    setShowMigrationModal(false);
+  };
+
+  const handleMigrationConfirm = async (masterPassword: string) => {
+    try {
+      const result = await controller.migratePasswords(masterPassword);
+      setMigrationResult(result);
+      setShowMigrationModal(false);
+      // Actualizar master password en sesión
+      setMasterPasswordInSession(masterPassword);
+    } catch (error) {
+      setMigrationError(error instanceof Error ? error.message : 'No se pudo migrar');
+    }
+  };
+
   return (
     <div className="dashboard">
+      {showMasterPasswordSetup && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <MasterPasswordSetup
+              onSuccess={handleMasterPasswordSetupSuccess}
+              onCancel={handleMasterPasswordSetupCancel}
+            />
+          </div>
+        </div>
+      )}
+      {showMigrationModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <MasterPasswordValidation
+              onSuccess={handleMigrationConfirm}
+              onCancel={handleMigrationCancel}
+            />
+          </div>
+        </div>
+      )}
       <header className="dashboard-header">
         <div className="header-left">
           <svg viewBox="0 0 24 24" width="32" height="32" className="header-logo">
@@ -35,16 +132,45 @@ export function DashboardShell({ user, initialPasswords, initialTags, initialWor
           </div>
         </div>
         <div className="header-right">
+          {!loading && !hasMasterPassword && (
+            <button
+              onClick={() => setShowMasterPasswordSetup(true)}
+              title="Configurar Master Password"
+              className="btn btn-secondary"
+            >
+              🔑 Configurar Master Password
+            </button>
+          )}
+          {!loading && hasMasterPassword && (
+            <button
+              onClick={handleMigrationStart}
+              title="Migrar passwords al master password"
+              className="btn btn-primary"
+            >
+              ♻️ Migrar passwords
+            </button>
+          )}
           <ThemeToggle />
           <AuthButton />
         </div>
       </header>
+      {hasMasterPassword && migrationResult && (
+        <div className="block" style={{ margin: '16px 0' }}>
+          Migración completada: {migrationResult.migrated} migradas, {migrationResult.skipped} ya migradas, {migrationResult.failed} fallidas.
+        </div>
+      )}
+      {hasMasterPassword && migrationError && (
+        <div className="block" style={{ margin: '16px 0', borderColor: 'var(--accent-red)', background: 'var(--bg-yellow)' }}>
+          {migrationError}
+        </div>
+      )}
       <main className="dashboard-main">
         <PasswordTable
           passwords={controller.passwords}
           tags={controller.tags}
           workspaces={controller.workspaces}
           isBusy={controller.isPending}
+          hasMasterPassword={hasMasterPassword}
           onCreatePassword={controller.createPassword}
           onUpdatePassword={controller.updatePassword}
           onDeletePassword={controller.deletePassword}

@@ -10,6 +10,7 @@ import {
   deleteTagAction,
   createWorkspaceAction,
   deleteWorkspaceAction,
+  migratePasswordsAction,
 } from '@/app/dashboard/actions';
 import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
 import { Tag, Workspace } from '@/core/domain/models/password';
@@ -51,7 +52,7 @@ export function usePasswordController(initialState: PasswordControllerState) {
         await deletePasswordAction(id);
         setPasswords((prev) => prev.filter((item) => item.id !== id));
       }),
-    decryptPassword: (id: string) => decryptPasswordAction(id),
+    decryptPassword: (id: string, masterPassword?: string) => decryptPasswordAction(id, masterPassword),
     createTag: (name: string) =>
       run(async () => {
         const created = await createTagAction({ name });
@@ -75,6 +76,10 @@ export function usePasswordController(initialState: PasswordControllerState) {
         await deleteWorkspaceAction(id);
         setWorkspaces((prev) => prev.filter((item) => item.id !== id));
         setPasswords((prev) => prev.map((item) => (item.workspaceId === id ? { ...item, workspaceId: null, workspace: null } : item)));
+      }),
+    migratePasswords: (masterPassword: string) =>
+      run(async () => {
+        return migratePasswordsAction({ masterPassword });
       }),
   }), []);
 

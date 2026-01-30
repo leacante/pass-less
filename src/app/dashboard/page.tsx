@@ -6,7 +6,7 @@ import { loadDashboardData } from './actions';
 export default async function DashboardPage() {
     const session = await auth();
 
-    if (!session) {
+    if (!session?.user?.email) {
         redirect('/');
     }
 
@@ -14,7 +14,7 @@ export default async function DashboardPage() {
 
     return (
         <DashboardShell
-            user={session.user}
+            user={session.user as { name?: string | null; email: string; image?: string | null }}
             initialPasswords={passwords}
             initialTags={tags}
             initialWorkspaces={workspaces}
