@@ -50,6 +50,19 @@ export default function MasterPasswordSetup({ onSuccess, onCancel }: MasterPassw
         throw new Error(data.error || 'Error al configurar el master password');
       }
 
+      // Guardar en sesión
+      const sessionResponse = await fetch('/api/session/master-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ masterPassword }),
+      });
+
+      if (!sessionResponse.ok) {
+        console.warn('Failed to save master password to session');
+      }
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');

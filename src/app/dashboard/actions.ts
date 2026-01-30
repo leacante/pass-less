@@ -113,7 +113,21 @@ export async function deletePasswordAction(id: string): Promise<void> {
 
 export async function decryptPasswordAction(id: string, masterPassword?: string | null): Promise<string> {
   const userId = await ensureUser();
-  return new DecryptPasswordUseCase(passwordRepo, crypto).execute(id, userId, masterPassword ?? undefined);
+  
+  let passwordToUse = masterPassword ?? undefined;
+  
+  // Si no se proporciona password, obtenerlo de la sesión
+  if (!passwordToUse) {
+    const { getSession } = await import('@/lib/iron-session');
+    const session = await getSession();
+    passwordToUse = session?.masterPassword;
+  }
+  
+  if (!passwordToUse) {
+    throw new Error('Master password is required');
+  }
+  
+  return new DecryptPasswordUseCase(passwordRepo, crypto).execute(id, userId, passwordToUse);
 }
 
 export async function createTagAction(input: { name: string; color?: string | null }): Promise<Tag> {

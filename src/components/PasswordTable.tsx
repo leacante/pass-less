@@ -5,6 +5,7 @@ import { PasswordRow } from './PasswordRow';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { TagManager } from './TagManager';
 import MasterPasswordValidation from './MasterPasswordValidation';
+import { useIronSession } from './hooks/useIronSession';
 import { PasswordDTO } from '@/core/application/dto/PasswordDTO';
 import { Tag, Workspace } from '@/core/domain/models/password';
 
@@ -56,6 +57,7 @@ export function PasswordTable({
     const [collapsedWorkspaces, setCollapsedWorkspaces] = useState<Set<string>>(new Set());
     const [showMasterPasswordPrompt, setShowMasterPasswordPrompt] = useState(false);
     const [promptContext, setPromptContext] = useState<'save' | 'decrypt'>('decrypt');
+    const [sessionMasterPassword, setSessionMasterPassword] = useState<string | null>(null);
     const [pendingAction, setPendingAction] = useState<
         | { type: 'create'; data: { username: string; password: string; description: string; observation?: string; tagId?: string; workspaceId?: string | null } }
         | { type: 'update'; id: string; data: { username?: string; password?: string; description?: string; observation?: string; tagId?: string | null; workspaceId?: string | null } }
@@ -63,6 +65,14 @@ export function PasswordTable({
     >(null);
     const pendingDecryptRef = useRef<{ id: string; resolve: (value: string) => void; reject: (reason?: unknown) => void } | null>(null);
     const autoScrollIntervalRef = useRef<number | null>(null);
+    const { session } = useIronSession();
+
+    // Obtener master password de la sesión
+    useEffect(() => {
+        if (session?.masterPassword) {
+            setSessionMasterPassword(session.masterPassword);
+        }
+    }, [session?.masterPassword]);
 
     const filteredPasswords = useMemo(() => {
         const search = searchTerm.toLowerCase();
@@ -162,10 +172,17 @@ export function PasswordTable({
     };
 
     const handleDecryptPassword = (id: string): Promise<string> => {
+        // Si el master password está en sesión, usarlo automáticamente
+        if (sessionMasterPassword) {
+            return onDecryptPassword(id);
+        }
+
+        // Si no hay master password configurado, desencriptar sin password
         if (!hasMasterPassword) {
             return onDecryptPassword(id);
         }
 
+        // Si no está en sesión, solicitar al usuario para guardarlo
         return new Promise((resolve, reject) => {
             pendingDecryptRef.current = { id, resolve, reject };
             setPromptContext('decrypt');
@@ -184,12 +201,31 @@ export function PasswordTable({
 
     const handleMasterPasswordSuccess = async (masterPassword: string) => {
         try {
+            // Primero, guardar master password en sesión
+            const saveResponse = await fetch('/api/session/master-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ masterPassword }),
+            });
+
+            if (!saveResponse.ok) {
+                throw new Error('Failed to save master password to session');
+            }
+
+            // Actualizar estado local
+            setSessionMasterPassword(masterPassword);
+            setShowMasterPasswordPrompt(false);
+
+            // Esperar un poco para asegurar que la sesión se haya actualizado
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Luego ejecutar la acción pendiente
             if (pendingDecryptRef.current) {
                 const { id, resolve, reject } = pendingDecryptRef.current;
                 pendingDecryptRef.current = null;
-                setShowMasterPasswordPrompt(false);
                 try {
-                    const result = await onDecryptPassword(id, masterPassword);
+                    // Ahora el master password está en sesión, así que no lo pasamos
+                    const result = await onDecryptPassword(id);
                     resolve(result);
                 } catch (error) {
                     reject(error);
@@ -198,6 +234,7 @@ export function PasswordTable({
             }
 
             if (pendingAction?.type === 'create') {
+                // Para crear, sí necesitamos pasar el password
                 await onCreatePassword({ ...pendingAction.data, masterPassword });
                 setIsAddingNew(false);
             }

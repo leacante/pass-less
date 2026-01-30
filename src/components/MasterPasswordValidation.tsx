@@ -46,6 +46,19 @@ export default function MasterPasswordValidation({
         throw new Error(data.message || 'Master password incorrecto');
       }
 
+      // Guardar en sesión
+      const sessionResponse = await fetch('/api/session/master-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ masterPassword }),
+      });
+
+      if (!sessionResponse.ok) {
+        console.warn('Failed to save master password to session');
+      }
+
       onSuccess(masterPassword);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');

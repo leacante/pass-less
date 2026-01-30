@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/iron-session';
 import { PrismaPasswordRepository } from '@/core/infrastructure/repositories/PrismaPasswordRepository';
 import { NodeCryptoService } from '@/core/infrastructure/crypto/NodeCryptoService';
 import { DecryptPasswordUseCase } from '@/core/application/use-cases/passwords/DecryptPasswordUseCase';
@@ -23,15 +24,27 @@ export async function POST(request: Request, { params }: RouteParams) {
     const { id } = await params;
 
     try {
-        const body = await request.json();
-        const { masterPassword } = body;
+        // Obtener master password de la sesión encriptada
+        const ironSession = await getSession();
+        const masterPassword = ironSession?.masterPassword;
 
+        if (!masterPassword) {
+            return NextResponse.json(
+                { error: 'Master password not found in session' },
+                { status: 401 }
+            );
+        }
+
+        // Desencriptar en el servidor sin devolver el password
         const decryptedPassword = await new DecryptPasswordUseCase(repository, crypto).execute(
             id,
             session.user.id,
             masterPassword,
         );
-        return NextResponse.json({ password: decryptedPassword });
+
+        // Devolver solo confirmación, no el password desencriptado
+        // El cliente puede acceder al password a través de la sesión si lo necesita
+        return NextResponse.json({ success: true, length: decryptedPassword.length });
     } catch (error) {
         console.error('Error decrypting password:', error);
         return NextResponse.json(

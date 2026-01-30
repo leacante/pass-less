@@ -19,6 +19,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ user, initialPasswords, initialTags, initialWorkspaces }: DashboardShellProps) {
   const [hasMasterPassword, setHasMasterPassword] = useState(false);
+  const [masterPasswordInSession, setMasterPasswordInSession] = useState<string | null>(null);
   const [showMasterPasswordSetup, setShowMasterPasswordSetup] = useState(false);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const [migrationResult, setMigrationResult] = useState<{ migrated: number; skipped: number; failed: number } | null>(null);
@@ -31,16 +32,24 @@ export function DashboardShell({ user, initialPasswords, initialTags, initialWor
     workspaces: initialWorkspaces,
   });
 
-  // Verificar si el usuario tiene master password configurado
+  // Verificar si el usuario tiene master password configurado y obtener de sesión
   useEffect(() => {
     const checkMasterPasswordStatus = async () => {
       try {
-        const response = await fetch('/api/users/profile');
-        const data = await response.json();
-        setHasMasterPassword(data.hasMasterPassword);
+        // Obtener estado del master password
+        const profileResponse = await fetch('/api/users/profile');
+        const profileData = await profileResponse.json();
+        setHasMasterPassword(profileData.hasMasterPassword);
+        
+        // Obtener master password de la sesión si existe
+        const sessionResponse = await fetch('/api/session');
+        const sessionData = await sessionResponse.json();
+        if (sessionData.masterPassword) {
+          setMasterPasswordInSession(sessionData.masterPassword);
+        }
         
         // Mostrar setup si no tiene master password y no se ha rechazado antes
-        if (!data.hasMasterPassword && !sessionStorage.getItem('masterPasswordSetupDismissed')) {
+        if (!profileData.hasMasterPassword && !sessionStorage.getItem('masterPasswordSetupDismissed')) {
           setShowMasterPasswordSetup(true);
         }
       } catch (error) {
@@ -64,8 +73,13 @@ export function DashboardShell({ user, initialPasswords, initialTags, initialWor
   };
 
   const handleMigrationStart = () => {
-    setMigrationError(null);
-    setShowMigrationModal(true);
+    // Si ya existe master password en sesión, no mostrar modal
+    if (masterPasswordInSession) {
+      handleMigrationConfirm(masterPasswordInSession);
+    } else {
+      setMigrationError(null);
+      setShowMigrationModal(true);
+    }
   };
 
   const handleMigrationCancel = () => {
@@ -77,6 +91,8 @@ export function DashboardShell({ user, initialPasswords, initialTags, initialWor
       const result = await controller.migratePasswords(masterPassword);
       setMigrationResult(result);
       setShowMigrationModal(false);
+      // Actualizar master password en sesión
+      setMasterPasswordInSession(masterPassword);
     } catch (error) {
       setMigrationError(error instanceof Error ? error.message : 'No se pudo migrar');
     }
