@@ -27,4 +27,5 @@ export interface PasswordRepository {
   update(data: UpdatePasswordDTO): Promise<Password>;
   delete(id: string, userId: string): Promise<void>;
   getSecret(id: string, userId: string): Promise<PasswordSecret | null>;
+  listSecretsByUser(userId: string): Promise<Array<{ id: string; secret: PasswordSecret }>>;
 }

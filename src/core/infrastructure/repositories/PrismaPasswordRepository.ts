@@ -129,4 +129,20 @@ export class PrismaPasswordRepository implements PasswordRepository {
       authTag: row.authTag,
     };
   }
+
+  async listSecretsByUser(userId: string): Promise<Array<{ id: string; secret: PasswordSecret }>> {
+    const rows = await prisma.password.findMany({
+      where: { userId },
+      select: { id: true, encryptedPassword: true, iv: true, authTag: true },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      secret: {
+        encryptedPassword: row.encryptedPassword,
+        iv: row.iv,
+        authTag: row.authTag,
+      },
+    }));
+  }
 }

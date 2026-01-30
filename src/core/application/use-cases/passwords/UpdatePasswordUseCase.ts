@@ -11,6 +11,7 @@ export interface UpdatePasswordInput {
   observation?: string | null;
   tagId?: string | null;
   workspaceId?: string | null;
+  masterPassword?: string; // Opcional: si el usuario tiene master password configurado
 }
 
 export class UpdatePasswordUseCase {
@@ -20,7 +21,7 @@ export class UpdatePasswordUseCase {
   ) {}
 
   execute(input: UpdatePasswordInput): Promise<Password> {
-    const secret = input.password ? this.encryption.encrypt(input.password, input.userId) : undefined;
+    const secret = input.password ? this.encryption.encrypt(input.password, input.userId, input.masterPassword) : undefined;
 
     return this.repository.update({
       id: input.id,

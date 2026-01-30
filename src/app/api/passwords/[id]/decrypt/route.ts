@@ -23,7 +23,14 @@ export async function POST(request: Request, { params }: RouteParams) {
     const { id } = await params;
 
     try {
-        const decryptedPassword = await new DecryptPasswordUseCase(repository, crypto).execute(id, session.user.id);
+        const body = await request.json();
+        const { masterPassword } = body;
+
+        const decryptedPassword = await new DecryptPasswordUseCase(repository, crypto).execute(
+            id,
+            session.user.id,
+            masterPassword,
+        );
         return NextResponse.json({ password: decryptedPassword });
     } catch (error) {
         console.error('Error decrypting password:', error);
