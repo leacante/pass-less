@@ -333,6 +333,9 @@ textarea.input {
 .hero {
   text-align: center;
   max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .logo-container {
@@ -611,6 +614,52 @@ textarea.input {
   font-weight: 600;
 }
 
+.workspace-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.workspace-search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.workspace-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.workspace-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.workspace-search-clear {
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.workspace-search-clear:hover {
+  color: var(--text-primary);
+}
+
 .workspace-list {
   list-style: none;
   display: flex;
@@ -735,6 +784,10 @@ textarea.input {
   margin-bottom: var(--space-lg);
 }
 
+.search-filter--wrap {
+  flex-wrap: wrap;
+}
+
 .search-filter svg:first-child {
   color: var(--text-muted);
   flex-shrink: 0;
@@ -747,6 +800,61 @@ textarea.input {
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
+}
+
+.search-input--workspace {
+  min-width: 200px;
+}
+
+.tag-filter {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-left: auto;
+}
+
+.tag-select-container {
+  min-width: 200px;
+}
+
+.tag-filter-select {
+  height: 36px;
+  padding: 0 0.5rem;
+}
+
+.tag-manager-btn {
+  margin-left: var(--space-md);
+}
+
+.selected-tags-row {
+  flex-basis: 100%;
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.selected-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.selected-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.2);
+  width: 16px;
+  height: 16px;
+  border: none;
+  cursor: pointer;
+  color: currentColor;
+}
+
+.clear-search--filters {
+  font-size: 0.8rem;
 }
 
 .search-input::placeholder {
@@ -1858,6 +1966,18 @@ div[data-color-mode="dark"] .md-editor-html {
   .workspace-sidebar {
     width: 100%;
     position: static;
+    min-width: 0;
+    max-width: none;
+    padding: var(--space-md);
+  }
+
+  .workspace-list {
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .workspace-delete-btn {
+    opacity: 1;
   }
 
   .table-header {
@@ -1867,6 +1987,33 @@ div[data-color-mode="dark"] .md-editor-html {
   }
 
   .btn-add {
+    justify-content: center;
+  }
+
+  .search-filter {
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+
+  .search-input--workspace {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .tag-filter {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .tag-select-container {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .tag-manager-btn {
+    margin-left: 0;
+    width: 100%;
     justify-content: center;
   }
 
@@ -1903,5 +2050,112 @@ div[data-color-mode="dark"] .md-editor-html {
   .form-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* ── Responsive table → card layout on small screens ── */
+@media (max-width: 640px) {
+  /* Hide the table header row */
+  .password-table thead {
+    display: none;
+  }
+
+  /* Make table, tbody, and rows render as blocks */
+  .password-table,
+  .password-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  /* Reset fixed table layout and column widths */
+  .password-table {
+    table-layout: auto;
+  }
+
+  .password-table th:nth-child(1),
+  .password-table td:nth-child(1),
+  .password-table th:nth-child(2),
+  .password-table td:nth-child(2),
+  .password-table th:nth-child(3),
+  .password-table td:nth-child(3),
+  .password-table th:nth-child(4),
+  .password-table td:nth-child(4) {
+    width: 100%;
+  }
+
+  /* Each password row becomes a card */
+  .password-row {
+    display: block;
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-sm);
+    overflow: hidden;
+  }
+
+  /* Each cell becomes a labeled flex row */
+  .password-row td {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .password-row td:last-child {
+    border-bottom: none;
+  }
+
+  /* Show column label via ::before using data-label */
+  .password-row td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 800;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  /* Actions cell: align buttons to the right, no label */
+  .password-row .actions-cell {
+    justify-content: flex-end;
+  }
+
+  /* Editing row: keep the form spanning full width */
+  .password-row.editing {
+    display: table-row;
+  }
+
+  .password-row.editing td {
+    display: table-cell;
+    border-bottom: none;
+    width: 100%;
+  }
+
+  /* Observation expanded row */
+  .observation-row {
+    display: block;
+    width: 100%;
+  }
+
+  .observation-row td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Workspace separator row: keep as a full-width block */
+  .workspace-separator {
+    display: block;
+    width: 100%;
+  }
+
+  .workspace-separator td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
   }
 }

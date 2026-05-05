@@ -141,15 +141,6 @@ export function DashboardShell({ user, initialPasswords, initialTags, initialWor
               🔑 Configurar Master Password
             </button>
           )}
-          {!loading && hasMasterPassword && (
-            <button
-              onClick={handleMigrationStart}
-              title="Migrar passwords al master password"
-              className="btn btn-primary"
-            >
-              ♻️ Migrar passwords
-            </button>
-          )}
           <ThemeToggle />
           <AuthButton />
         </div>

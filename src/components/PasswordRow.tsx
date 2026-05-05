@@ -275,7 +275,7 @@ export function PasswordRow({
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <td>
+                <td data-label="Usuario">
                     <div className="cell-content">
                         <button
                             className={`btn-expand ${isExpanded ? 'active' : ''}`}
@@ -289,13 +289,13 @@ export function PasswordRow({
                         <CopyButton value={entry.username} label={entry.username} variant="user" />
                     </div>
                 </td>
-                <td>
+                <td data-label="Contraseña">
                     <div className="cell-content">
                         <span className="password-dots">••••••••</span>
                         <CopyButton value="" label="Contraseña" onDecrypt={decryptPassword} variant="password" />
                     </div>
                 </td>
-                <td>
+                <td data-label="Descripción">
                     <div className="cell-content">
                         <span className="description">{entry.description}</span>
                         {entry.tag && (
