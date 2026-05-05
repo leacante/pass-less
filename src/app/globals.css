@@ -532,6 +532,13 @@ textarea.input {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  flex-shrink: 0;
+}
+
+.user-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .dashboard-main {
@@ -1897,6 +1904,149 @@ textarea.input {
 
 .markdown-body hr {
   border-color: var(--border-color) !important;
+}
+
+/* ===== Mobile Responsive — S22 Ultra & phones ≤ 640px ===== */
+@media (max-width: 640px) {
+
+  /* --- Header --- */
+  .dashboard-header {
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .header-left h1 {
+    font-size: 1.1rem;
+  }
+
+  .header-left .user-email {
+    font-size: 0.7rem;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Collapse "Configurar Master Password" to icon-only on mobile */
+  .header-right .btn.btn-secondary {
+    font-size: 0.75rem;
+    padding: var(--space-xs) var(--space-sm);
+    max-width: 40px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  /* --- Dashboard main padding --- */
+  .dashboard-main {
+    padding: var(--space-md);
+  }
+
+  /* --- Stack workspace + password table vertically --- */
+  .workspace-layout {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .workspace-sidebar {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
+    position: static;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .workspace-list {
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  .password-table-container {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* --- Table header row --- */
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+
+  .table-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .table-header .btn-add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* --- Search/filter bar --- */
+  .search-filter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+
+  .tag-filter {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .tag-select-container {
+    min-width: unset;
+    width: 100%;
+  }
+
+  /* --- Password table columns --- */
+  .password-table th:nth-child(1),
+  .password-table td:nth-child(1) { width: 30%; }
+
+  .password-table th:nth-child(2),
+  .password-table td:nth-child(2) { width: 22%; }
+
+  .password-table th:nth-child(3),
+  .password-table td:nth-child(3) { width: auto; }
+
+  .password-table th:nth-child(4),
+  .password-table td:nth-child(4) { width: 18%; }
+
+  .password-table th,
+  .password-table td {
+    padding: var(--space-sm);
+  }
+
+  /* --- Add/Edit password form — single column --- */
+  .form-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "username"
+      "password"
+      "description"
+      "tag"
+      "workspace";
+  }
+
+  .form-grid-span-2 {
+    grid-column: span 1;
+  }
+
+  /* --- Modal sizing --- */
+  .modal-content {
+    padding: var(--space-lg);
+    max-width: 100%;
+  }
+
+  /* --- Footer --- */
+  .dashboard-footer {
+    font-size: 0.75rem;
+    padding: var(--space-md);
+  }
 }
 
 .markdown-body li {
