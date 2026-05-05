@@ -49,6 +49,7 @@ export function PasswordTable({
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('all');
     const [newWorkspaceName, setNewWorkspaceName] = useState('');
+    const [workspaceSearch, setWorkspaceSearch] = useState('');
     const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<{ id: string; name: string } | null>(null);
     const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
@@ -420,7 +421,27 @@ export function PasswordTable({
                 </div>
                 {workspaceError && <p className="workspace-error">{workspaceError}</p>}
 
+                <div className="workspace-search">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" className="workspace-search-icon">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                        type="text"
+                        value={workspaceSearch}
+                        onChange={(e) => setWorkspaceSearch(e.target.value)}
+                        placeholder="Buscar espacio..."
+                        className="workspace-search-input"
+                    />
+                    {workspaceSearch && (
+                        <button className="workspace-search-clear" onClick={() => setWorkspaceSearch('')} title="Limpiar">
+                            ×
+                        </button>
+                    )}
+                </div>
+
                 <ul className="workspace-list">
+                    {!workspaceSearch && (
                     <li>
                         <button
                             className={`workspace-item ${selectedWorkspaceId === 'all' ? 'active' : ''}`}
@@ -429,6 +450,8 @@ export function PasswordTable({
                             Todos
                         </button>
                     </li>
+                    )}
+                    {!workspaceSearch && (
                     <li>
                         <button
                             className={`workspace-item ${selectedWorkspaceId === 'none' ? 'active' : ''}`}
@@ -437,7 +460,8 @@ export function PasswordTable({
                             Sin espacio
                         </button>
                     </li>
-                    {workspaces.map((workspace) => (
+                    )}
+                    {workspaces.filter((w) => w.name.toLowerCase().includes(workspaceSearch.toLowerCase())).map((workspace) => (
                         <li key={workspace.id}>
                             <div className="workspace-item-container">
                                 <button
@@ -491,7 +515,7 @@ export function PasswordTable({
                     </button>
                 </div>
 
-                <div className="search-filter" style={{ flexWrap: 'wrap' }}>
+                <div className="search-filter search-filter--wrap">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="11" cy="11" r="8" />
                         <path d="m21 21-4.35-4.35" />
@@ -501,15 +525,13 @@ export function PasswordTable({
                         placeholder="Buscar por usuario o descripción..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                        style={{ minWidth: '200px' }}
+                        className="search-input search-input--workspace"
                     />
 
-                    <div className="tag-filter" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto' }}>
+                    <div className="tag-filter">
                         <div className="tag-select-container">
                             <select
-                                className="input-field"
-                                style={{ height: '36px', padding: '0 0.5rem' }}
+                                className="input-field tag-filter-select"
                                 onChange={(e) => {
                                     if (e.target.value && !selectedTagIds.includes(e.target.value)) {
                                         setSelectedTagIds([...selectedTagIds, e.target.value]);
@@ -524,21 +546,21 @@ export function PasswordTable({
                             </select>
                         </div>
 
-                        <button onClick={() => setIsTagManagerOpen(true)} className="btn-cancel-small" style={{ marginLeft: '1rem' }}>
+                        <button onClick={() => setIsTagManagerOpen(true)} className="btn-cancel-small tag-manager-btn">
                             Administrar Tags
                         </button>
                     </div>
 
                     {selectedTagIds.length > 0 && (
-                        <div style={{ flexBasis: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                        <div className="selected-tags-row">
                             {selectedTagIds.map((id) => {
                                 const tag = tags.find((t) => t.id === id);
                                 return tag ? (
-                                    <span key={id} className="tag-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <span key={id} className="tag-badge selected-tag-badge">
                                         {tag.name}
                                         <button
                                             onClick={() => setSelectedTagIds(selectedTagIds.filter((tid) => tid !== id))}
-                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(0,0,0,0.2)', width: '16px', height: '16px', border: 'none', cursor: 'pointer', color: 'currentColor' }}
+                                            className="selected-tag-remove"
                                         >
                                             ×
                                         </button>
@@ -547,8 +569,7 @@ export function PasswordTable({
                             })}
                             <button
                                 onClick={() => setSelectedTagIds([])}
-                                className="clear-search"
-                                style={{ fontSize: '0.8rem' }}
+                                className="clear-search clear-search--filters"
                             >
                                 Limpiar filtros
                             </button>
